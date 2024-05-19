@@ -206,7 +206,7 @@ private:
   std::vector<Entry> entries;
 
   void registerMove(chess::Move move) {
-    Entry entry{board.zobrist(), move.from(), move.to()};
+    Entry entry{board.hash(), move.from(), move.to()};
     entries.push_back(entry);
   }
 
