@@ -108,7 +108,18 @@ static vector<Edge> FindEdgesFromPosition(const Board &board,
   return edges;
 }
 
-static void ExecuteCommand(const Command &command) {
+static void ExecuteQuitCommand(const Command &command) {
+  if (command.name == "quit") {
+    exit(0);
+  }
+}
+static void ExecuteExitCommand(const Command &command) {
+  if (command.name == "exit") {
+    exit(0);
+  }
+}
+
+static void ExecutePositionFromSeqCommand(const Command &command) {
   if (command.name == "positionfromseq") {
     if (command.args.empty()) {
       cerr << "Usage: positionfromseq <number of halfmoves> <sequence of "
@@ -125,6 +136,7 @@ static void ExecuteCommand(const Command &command) {
     for (int i = 1; i <= halfmoves; i++) {
       board.makeMove(uci::uciToMove(board, command.args[i]));
     }
+    cout << board.getFen() << '\n';
     uint64_t pos_hash = board.hash();
     vector<Edge> edges = FindEdgesFromPosition(board, pos_hash);
     cout << "positionmoves " << edges.size() << '\n';
@@ -132,14 +144,38 @@ static void ExecuteCommand(const Command &command) {
       cout << edge.move << " " << edge.count << '\n';
     }
     cout.flush();
-    return;
   }
-  if (command.name == "exit") {
-    exit(0);
+}
+
+static void ExecuteFromFenCommand(const Command &command) {
+  if (command.name == "fromfen") {
+    if (command.args.empty() || command.args.size() != 6) {
+      cerr << "Usage: fromfen <fen>\n";
+      return;
+    }
+    std::string fen;
+    for (int i = 0; i < 6; i++) {
+      fen += command.args[i];
+      if (i != 5) {
+        fen += " ";
+      }
+    }
+    Board board(fen);
+    uint64_t pos_hash = board.hash();
+    vector<Edge> edges = FindEdgesFromPosition(board, pos_hash);
+    cout << "positionmoves " << edges.size() << '\n';
+    for (const Edge &edge : edges) {
+      cout << edge.move << " " << edge.count << '\n';
+    }
+    cout.flush();
   }
-  if (command.name == "quit") {
-    exit(0);
-  }
+}
+
+static void ExecuteCommand(const Command &command) {
+  ExecuteQuitCommand(command);
+  ExecuteExitCommand(command);
+  ExecutePositionFromSeqCommand(command);
+  ExecuteFromFenCommand(command);
 }
 
 int main(int argc, char *argv[]) {
