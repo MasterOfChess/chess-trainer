@@ -137,6 +137,9 @@ static void ExecuteCommand(const Command &command) {
   if (command.name == "exit") {
     exit(0);
   }
+  if (command.name == "quit") {
+    exit(0);
+  }
 }
 
 int main(int argc, char *argv[]) {
