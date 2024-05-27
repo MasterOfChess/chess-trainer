@@ -4,8 +4,10 @@
  * The sequence of 16 byte entries.
  * One entry consists of:
  * 8 byte zobrist hash of the position
- * 2 byte number of source square of the move
- * 2 byte number of destination square of the move
+ * 1 byte number of source square of the move
+ * 1 byte number of destination square of the move
+ * 1 byte number indicating if promotion happened
+ * 1 byte number indicating the promotion piece
  * 4 byte number of apperances of the move in that position
  *
  * Arguments:
@@ -37,8 +39,10 @@ using namespace chess;
 
 struct BookEntry {
   uint64_t hash;
-  uint16_t src;
-  uint16_t dst;
+  uint8_t src;
+  uint8_t dst;
+  uint8_t promotion;
+  uint8_t promotion_piece;
   uint32_t count;
 };
 
@@ -85,8 +89,17 @@ static vector<Edge> FindEdgesFromPosition(const Board &board,
       book.begin(), book.end(), pos_hash,
       [](const BookEntry &entry, uint64_t hash) { return entry.hash < hash; });
   while (it != book.end() && it->hash == pos_hash) {
-    chess::Move move = uci::uciToMove(
-        board, string(chess::Square(it->src)) + string(chess::Square(it->dst)));
+    chess::Move move;
+    chess::Square src(it->src);
+    chess::Square dst(it->dst);
+    chess::PieceType promotion_piece(
+        static_cast<chess::PieceType::underlying>(it->promotion_piece));
+    if (it->promotion) {
+      move =
+          chess::Move::make<chess::Move::PROMOTION>(src, dst, promotion_piece);
+    } else {
+      move = chess::Move::make(src, dst);
+    }
     edges.push_back({move, it->count});
     it++;
   }

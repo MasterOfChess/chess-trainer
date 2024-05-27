@@ -5,16 +5,20 @@
  * The sequence of 16 byte entries.
  * One entry consists of:
  * 8 byte zobrist hash of the position
- * 2 byte number of source square of the move
- * 2 byte number of destination square of the move
+ * 1 byte number of source square of the move
+ * 1 byte number of destination square of the move
+ * 1 byte number indicating if promotion happened
+ * 1 byte number indicating the promotion piece
  * 4 byte number of apperances of the move in that position
  *
  * Arguments:
- * book filename
- * number of games in the input pgn file
- * probability of accepting the game (1/p)
- * random generator seed
+ *  book filename
+ *  number of games in the input pgn file
+ *  probability of accepting the game (1/p)
+ *  random generator seed
  *
+ * Example usage:
+ *  zstdcat database.zst | ./make_book tree.bin 91383489 1000 73632
  */
 #include "./chess-library/include/chess.hpp"
 #include <chrono>
@@ -202,23 +206,37 @@ private:
     uint64_t zobrist;
     chess::Square source_square;
     chess::Square destination_square;
+    bool promotion;
+    chess::PieceType promotion_piece;
   };
   std::vector<Entry> entries;
 
   void registerMove(chess::Move move) {
-    Entry entry{board.hash(), move.from(), move.to()};
+    Entry entry;
+    if (move.typeOf() == move.PROMOTION) {
+      entry = Entry{board.hash(), move.from(), move.to(), true,
+                    move.promotionType()};
+    } else {
+      entry = Entry{board.hash(), move.from(), move.to(), false,
+                    chess::PieceType::PAWN};
+    }
     entries.push_back(entry);
   }
 
   void writeMove(const Entry &entry, int count) {
     uint64_t zobrist = entry.zobrist;
-    uint16_t source_square = entry.source_square.index();
-    uint16_t destination_square = entry.destination_square.index();
+    uint8_t source_square = entry.source_square.index();
+    uint8_t destination_square = entry.destination_square.index();
+    uint8_t promotion = entry.promotion;
+    uint8_t promotion_piece = entry.promotion_piece;
     uint32_t cnt = count;
     file.write(reinterpret_cast<char *>(&zobrist), sizeof(zobrist));
     file.write(reinterpret_cast<char *>(&source_square), sizeof(source_square));
     file.write(reinterpret_cast<char *>(&destination_square),
                sizeof(destination_square));
+    file.write(reinterpret_cast<char *>(&promotion), sizeof(promotion));
+    file.write(reinterpret_cast<char *>(&promotion_piece),
+               sizeof(promotion_piece));
     file.write(reinterpret_cast<char *>(&cnt), sizeof(cnt));
   }
 };
