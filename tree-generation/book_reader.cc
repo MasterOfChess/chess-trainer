@@ -136,7 +136,6 @@ static void ExecutePositionFromSeqCommand(const Command &command) {
     for (int i = 1; i <= halfmoves; i++) {
       board.makeMove(uci::uciToMove(board, command.args[i]));
     }
-    cout << board.getFen() << '\n';
     uint64_t pos_hash = board.hash();
     vector<Edge> edges = FindEdgesFromPosition(board, pos_hash);
     cout << "positionmoves " << edges.size() << '\n';
