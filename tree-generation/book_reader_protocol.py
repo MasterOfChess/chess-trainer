@@ -41,6 +41,12 @@ class BaseCommand(Generic[BookProtocolT, T], metaclass=abc.ABCMeta):
     def on_line(self, book_reader: BookProtocolT, line: str) -> None:
         """Process the command line received from the book reader."""
 
+    def terminate_command(self, exc: Exception) -> None:
+        """Terminate the command with an exception."""
+        if not self.result.done():
+            self.state = CommandState.DONE
+            self.result.set_exception(exc)
+
     def set_done(self, value: T | None) -> None:
         self.state = CommandState.DONE
         if not self.result.done():
@@ -73,8 +79,9 @@ class BookProtocol(asyncio.SubprocessProtocol):
         self.loop = asyncio.get_running_loop()
         self.transport: asyncio.SubprocessTransport | None = None
         self.output = bytearray()
-        self.queue = queue.Queue()
+        self.queue: queue.Queue[BaseCommand] = queue.Queue()
         self.command: BaseCommand[BookProtocolT, Any] | None = None
+        self.return_code: asyncio.Future[int] = asyncio.Future()
 
     def _update_current_command(self) -> None:
         if self.command is None or self.command.is_done():
@@ -108,12 +115,34 @@ class BookProtocol(asyncio.SubprocessProtocol):
         return await command.result
 
     def send_line(self, line: str) -> None:
+        logger.debug('%s: Send line: %s', self, line)
         stdin = self.transport.get_pipe_transport(0)
         stdin.write((line + '\n').encode('utf-8'))
 
     def pipe_connection_lost(self, fd: int, exc: Exception | None) -> None:
         logger.debug('%s: Pipe connection lost (fd: %s, exc: %r)', self, fd,
                      exc)
+
+    def process_exited(self) -> None:
+        logger.debug('%s: Child process exited', self)
+
+    def connection_lost(self, exc: Exception | None) -> None:
+        exit_code = self.transport.get_returncode()
+        logger.debug('%s: Connection lost (exc: %r, exit_code: %d)', self, exc,
+                     exit_code)
+        if self.command:
+            self.command.terminate_command(exc)
+        while True:
+            try:
+                self.queue.get_nowait().terminate_command(exc)
+            except queue.Empty:
+                break
+        self.return_code.set_result(exit_code)
+
+    def close(self):
+        logger.debug('%s: Closing connection', self)
+        self.transport.close()
+        self.return_code.set_result(0)
 
     def __repr__(self) -> str:
         if self.transport is not None:
@@ -237,6 +266,7 @@ class BookReader:
         logger.debug('Quitting')
         quit_command = QuitCommand()
         await self.protocol.add_command(quit_command)
+        self.protocol.close()
 
     async def exit(self) -> None:
         """
@@ -245,6 +275,7 @@ class BookReader:
         """
         exit_command = ExitCommand()
         await self.protocol.add_command(exit_command)
+        self.protocol.close()
 
     @classmethod
     async def popen(cls, command: str, *args):
