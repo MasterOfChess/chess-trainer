@@ -17,32 +17,6 @@
     <script src="{{url_for('static', filename='external/js/chessboardjs-1.0.0/chessboard-1.0.0.min.js')}}"></script>
   </head>
   <body>
-    <div id="pieceSelection">
-      <img
-        src="{{url_for('static', filename='external/img/chesspieces/wQ.png')}}"
-        alt="Queen"
-        class="promotion-piece"
-        data-piece="q"
-      />
-      <img
-        src="{{url_for('static', filename='external/img/chesspieces/wR.png')}}"
-        alt="Rook"
-        class="promotion-piece"
-        data-piece="r"
-      />
-      <img
-        src="{{url_for('static', filename='external/img/chesspieces/wB.png')}}"
-        alt="Bishop"
-        class="promotion-piece"
-        data-piece="b"
-      />
-      <img
-        src="{{url_for('static', filename='external/img/chesspieces/wN.png')}}"
-        alt="Knight"
-        class="promotion-piece"
-        data-piece="n"
-      />
-    </div>
     <div id="myBoard" style="width: 400px"></div>
     <label>Status:</label>
     <div id="status"></div>
@@ -57,4 +31,3 @@
   language="javascript"
   src="{{url_for('static', filename='play_bot.js')}}"
 ></script>
-
