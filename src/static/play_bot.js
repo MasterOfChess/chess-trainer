@@ -13,7 +13,7 @@ let promotion_running = false;
 function onDragStart(source, piece, position, orientation) {
   console.log("onDragStart", source, piece, position, orientation);
   if (promotion_running) {
-    $('#myBoard .square-' + source).get(0).click();
+    $('#board .square-' + source).get(0).click();
     console.log("Clicked " + source);
   }
   // do not pick up pieces if the game is over
@@ -29,7 +29,7 @@ function onDragStart(source, piece, position, orientation) {
 }
 
 function clickSquare(square) {
-  var $square = $('#myBoard .square-' + square);
+  var $square = $('#board .square-' + square);
   $square.on('click', function () {
     console.log('click');
   });
@@ -68,7 +68,7 @@ async function promotionHighlightSquares() {
 }
 
 function promotionRemoveHighlight() {
-  $('#myBoard .square-55d63').css('background', '')
+  $('#board .square-55d63').css('background', '')
 }
 
 async function promotionOnDrop(move, source, target, piece) {
@@ -80,7 +80,7 @@ async function promotionOnDrop(move, source, target, piece) {
       console.log("Promoting");
       promotion_running = true;
       for (let square of promotionSquaresUnder(target)) {
-        let $square = $('#myBoard .square-' + square.coord);
+        let $square = $('#board .square-' + square.coord);
         game.put({ type: square.piece, color: color }, square.coord);
         console.log("Putting " + square.piece + " at " + square.coord);
         $square.addClass('promotion-square');
@@ -182,6 +182,15 @@ var config = {
   onDrop: onDrop,
   onSnapEnd: onSnapEnd,
 };
-board = Chessboard("myBoard", config);
+board = Chessboard("board", config);
 
 updateStatus();
+
+let bot_lvl_form = document.getElementById("bot-lvl-form");
+bot_lvl_form.oninput = function () {
+  let bot_lvl = this.value;
+  $('label[for="bot-lvl-form"]').text("Bot lvl: " + bot_lvl);
+  $.post("/set_bot_lvl", { bot_lvl: bot_lvl }, function (data) {
+    console.log(data);
+  });
+}
