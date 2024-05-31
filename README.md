@@ -15,7 +15,7 @@ cd Stockfish/src
 make -j profile-build ARCH=x86-64
 cd ../..
 mkdir src/static/stockfish
-cp Stockfish/stockfish* src/static/stockfish/
+cp Stockfish/src/stockfish* src/static/stockfish/
 rm -rf Stockfish
 
 # Compile book_reader.cc
