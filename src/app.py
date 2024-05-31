@@ -23,9 +23,11 @@ def initialize_config():
         session['bot_lvl'] = 10
     if 'branching_factor' not in session:
         session['branching_factor'] = 1
+    if 'color' not in session:
+        session['color'] = 'white'
 
 
-def new_game():
+def init_new_game():
     session['in_book'] = True
     engine.configure({'Skill Level': session['bot_lvl']})
 
@@ -39,11 +41,31 @@ def set_bot_lvl():
     return {'bot_lvl': lvl}
 
 
+@app.route('/new_game', methods=['GET'])
+def new_game():
+    return render_template('new_game.html')
+
+
+@app.route('/choose_color', methods=['POST'])
+def choose_color():
+    color = request.form.get('color')
+    color = 'white' if color == 'white-color' else 'black'
+    session['color'] = color
+    return {'response': 'success'}
+
+
+@app.route('/play')
+def play():
+    initialize_config()
+    init_new_game()
+    return render_template('play.html', player_color=session['color'])
+
+
 # define root(index) route
 @app.route('/')
 def root():
     initialize_config()
-    new_game()
+    init_new_game()
     return render_template('index.html')
 
 

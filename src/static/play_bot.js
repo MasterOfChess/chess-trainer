@@ -18,7 +18,7 @@ function onDragStart(source, piece, position, orientation) {
   }
   // do not pick up pieces if the game is over
   if (game.game_over()) return false;
-
+  if (game.turn() !== player_color[0]) return false;
   // only pick up pieces for the side to move
   if (
     (game.turn() === "w" && piece.search(/^b/) !== -1) ||
@@ -28,12 +28,6 @@ function onDragStart(source, piece, position, orientation) {
   }
 }
 
-function clickSquare(square) {
-  var $square = $('#board .square-' + square);
-  $square.on('click', function () {
-    console.log('click');
-  });
-}
 function promotionSquaresUnder(square) {
   let file = square[0];
   let rank = parseInt(square[1]);
@@ -107,6 +101,14 @@ async function promotionOnDrop(move, source, target, piece) {
   }
 }
 
+async function askEngineToPlayMove() {
+  $.post("/make_move", { fen: game.fen() }, async function (data) {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    game.load(data.fen);
+    board.position(game.fen());
+  });
+}
+
 async function onDrop(source, target, piece) {
   console.log("onDrop", source, target);
   let is_legal = (source, target) => {
@@ -125,11 +127,7 @@ async function onDrop(source, target, piece) {
   game.move(move);
   board.position(game.fen());
 
-  $.post("/make_move", { fen: game.fen() }, async function (data) {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    game.load(data.fen);
-    board.position(game.fen());
-  });
+  await askEngineToPlayMove();
 
   updateStatus();
 }
@@ -175,6 +173,17 @@ function updateStatus() {
   $pgn.html(game.pgn());
 }
 
+async function startGame() {
+  if (player_color === "black") {
+    board.orientation('black');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await askEngineToPlayMove();
+  }
+  else {
+    board.orientation('white');
+  }
+}
+
 var config = {
   draggable: true,
   position: "start",
@@ -185,7 +194,6 @@ var config = {
 board = Chessboard("board", config);
 
 updateStatus();
-
 let bot_lvl_form = document.getElementById("bot-lvl-form");
 bot_lvl_form.oninput = function () {
   let bot_lvl = this.value;
@@ -194,3 +202,7 @@ bot_lvl_form.oninput = function () {
     console.log(data);
   });
 }
+$('#play-button').on('click', async function () {
+  $(this).off('click');
+  await startGame();
+});
