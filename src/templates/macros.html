@@ -1,0 +1,21 @@
+{% macro nav_link(endpoint, text, is_active) %}
+<li class="nav-item">
+  <a
+    class="nav-link {{ 'active' if is_active else '' }}"
+    href="{{ '#' if endpoint == '#' else url_for(endpoint) }}"
+    >{{ text }}</a
+  >
+</li>
+{% endmacro %} {% macro nav_bar(tabs, curr_endpoint) %}
+<nav class="navbar navbar-expand bg-dark-subtle">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">Chess Opening Trainer</a>
+    </div>
+    <ul class="nav navbar-nav ml-auto">
+      {% for (endpoint, text) in tabs %} {{ nav_link(endpoint, text,
+      curr_endpoint == endpoint) }} {% endfor %}
+    </ul>
+  </div>
+</nav>
+{% endmacro %}
