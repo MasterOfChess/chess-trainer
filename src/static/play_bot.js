@@ -171,6 +171,7 @@ function updateStatus() {
   $status.html(status);
   $fen.html(game.fen());
   $pgn.html(game.pgn());
+  console.log(game.pgn());
 }
 
 async function startGame() {
@@ -199,6 +200,14 @@ bot_lvl_form.oninput = function () {
   let bot_lvl = this.value;
   $('label[for="bot-lvl-form"]').text("Bot lvl: " + bot_lvl);
   $.post("/set_bot_lvl", { bot_lvl: bot_lvl }, function (data) {
+    console.log(data);
+  });
+}
+let freedom_degree = document.getElementById("freedom-degree-form");
+freedom_degree.oninput = function () {
+  let freedom_degree = this.value;
+  $('label[for="freedom-degree-form"]').text("Freedom degree: " + freedom_degree);
+  $.post("/set_freedom_degree", { freedom_degree: freedom_degree }, function (data) {
     console.log(data);
   });
 }

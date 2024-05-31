@@ -21,14 +21,16 @@ def initialize_config():
     session.permanent = True
     if 'bot_lvl' not in session:
         session['bot_lvl'] = 10
-    if 'branching_factor' not in session:
-        session['branching_factor'] = 1
+    if 'freedom_degree' not in session:
+        session['freedom_degree'] = 3
     if 'color' not in session:
         session['color'] = 'white'
 
 
 def init_new_game():
     session['in_book'] = True
+    session['freedom_degree'] = 3
+    session['bot_lvl'] = 10
     engine.configure({'Skill Level': session['bot_lvl']})
 
 
@@ -39,6 +41,13 @@ def set_bot_lvl():
     print(f'Setting bot_lvl to {lvl}')
     engine.configure({'Skill Level': lvl})
     return {'bot_lvl': lvl}
+
+@app.route('/set_freedom_degree', methods=['POST'])
+def set_freedom_degree():
+    deg = int(request.form.get('freedom_degree'))
+    session['freedom_degree'] = deg
+    print(f'Setting freedom_degree to {deg}')
+    return {'freedom_degree': deg}
 
 
 @app.route('/new_game', methods=['GET'])
@@ -82,7 +91,7 @@ def choose_move(board: chess.Board):
     if not edge_result.edges:
         return choose_engine_move(board)
     print('\n'.join(map(str, edge_result.edges)))
-    available_edges = edge_result.edges[:session['branching_factor']]
+    available_edges = edge_result.edges[:session['freedom_degree']]
     edge = random.choice(available_edges)
     board.push(edge.move)
     return board.fen()
@@ -94,6 +103,8 @@ def make_move():
     board = chess.Board(fen)
     # move = random.choice(list(board.legal_moves))
     # board.push(move)
+    if (board.is_game_over()):
+        return {'fen': board.fen()}
     fen = choose_move(board)
 
     return {'fen': fen}
