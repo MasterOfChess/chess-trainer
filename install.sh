@@ -1,7 +1,3 @@
-# chess-trainer
-# Instalation
-Download the repository and run following commands from the repository directory.
-```bash
 # Install required packages
 python3 -m venv .venv
 source .venv/bin/activate
@@ -26,9 +22,3 @@ cd ..
 # Make bash scripts executable
 chmod +x run_trainer.sh
 chmod +x open_app.sh
-```
-
-# Running the app
-You can ran the app with `run_trainer.sh` script.
-Opening app is as easy as opening `http://localhost:5000` in your browser.
-Alternatively you can use `open_app.sh` script.
