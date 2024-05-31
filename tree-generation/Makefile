@@ -15,10 +15,10 @@ CXXFLAGS = -std=c++17 -O3 -march=native -g -W -Wall -Wextra
 all: book_reader make_book
 
 make_book: make_book.cc
-		$(CXX) $(CXXFLAGS) -o $@ $<
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
 book_reader: book_reader.cc
-    $(CXX) $(CXXFLAGS) -o $@ $<
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
 clean:
-    rm -f book_reader make_book
+	rm -f book_reader make_book
