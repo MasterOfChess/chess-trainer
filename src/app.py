@@ -1,20 +1,50 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect, url_for
 import datetime
 from book_reader_protocol import BookReader
 import chess
 import chess.engine
 import random
+import os
+import dataclasses
+
+# big_book - 1 934 385 games
+# semi_slav - 141 640 games
 
 # create web app instance
 app = Flask(__name__)
 
 app.secret_key = 'KEY_EASY_TO_HACK'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=10)
+BOOK_READER_PATH = os.path.join('static', 'book_reader')
+BOOKS_DIR = os.path.join('static', 'books')
+BOOKS = ['tree', 'big_book', 'semi_slav']
 
 engine = chess.engine.SimpleEngine.popen_uci(
     '../stockfish/stockfish-ubuntu-x86-64-avx2')
-book_reader = BookReader.popen('../tree-generation/book_reader',
-                               '../tree-generation/tree.bin')
+book_reader = BookReader.popen(BOOK_READER_PATH,
+                               os.path.join(BOOKS_DIR, 'tree.bin'))
+
+
+@dataclasses.dataclass
+class Opening:
+    book: str
+    text: str
+
+
+OPENINGS = [
+    Opening('tree', 'Small Book'),
+    Opening('big_book', 'Big Book'),
+    Opening('semi_slav', 'Semi-Slav')
+]
+
+
+def change_book(new_book):
+    if session['current_book'] != new_book:
+        global book_reader
+        book_reader.quit()
+        book_reader = BookReader.popen(
+            BOOK_READER_PATH, os.path.join(BOOKS_DIR, new_book + '.bin'))
+        session['current_book'] = new_book
 
 
 def initialize_config():
@@ -25,6 +55,8 @@ def initialize_config():
         session['freedom_degree'] = 3
     if 'color' not in session:
         session['color'] = 'white'
+    if 'current_book' not in session:
+        session['current_book'] = 'tree'
 
 
 def init_new_game():
@@ -34,6 +66,19 @@ def init_new_game():
     engine.configure({'Skill Level': session['bot_lvl']})
 
 
+@app.route('/openings/<name>')
+def openings(name):
+    initialize_config()
+    change_book(name)
+    return redirect(url_for('new_game'))
+
+
+@app.route('/choose_opening', methods=['GET'])
+def choose_opening():
+    initialize_config()
+    return render_template('choose_opening.html', openings_list=OPENINGS)
+
+
 @app.route('/set_bot_lvl', methods=['POST'])
 def set_bot_lvl():
     lvl = int(request.form.get('bot_lvl'))
@@ -41,6 +86,7 @@ def set_bot_lvl():
     print(f'Setting bot_lvl to {lvl}')
     engine.configure({'Skill Level': lvl})
     return {'bot_lvl': lvl}
+
 
 @app.route('/set_freedom_degree', methods=['POST'])
 def set_freedom_degree():
@@ -52,11 +98,13 @@ def set_freedom_degree():
 
 @app.route('/new_game', methods=['GET'])
 def new_game():
+    initialize_config()
     return render_template('new_game.html')
 
 
 @app.route('/choose_color', methods=['POST'])
 def choose_color():
+    initialize_config()
     color = request.form.get('color')
     color = 'white' if color == 'white-color' else 'black'
     session['color'] = color
@@ -101,8 +149,6 @@ def choose_move(board: chess.Board):
 def make_move():
     fen = request.form.get('fen')
     board = chess.Board(fen)
-    # move = random.choice(list(board.legal_moves))
-    # board.push(move)
     if (board.is_game_over()):
         return {'fen': board.fen()}
     fen = choose_move(board)

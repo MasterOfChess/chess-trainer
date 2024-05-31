@@ -16,9 +16,11 @@
  *  number of games in the input pgn file
  *  probability of accepting the game (1/p)
  *  random generator seed
+ *  max depth of the book tree in halfmoves
  *
  * Example usage:
- *  zstdcat database.zst | ./make_book tree.bin 91383489 1000 73632
+ *  zstdcat ../data/lichess_db_standard_rated_2024-04.pgn.zst | \
+ *  ./make_book semi_slav.bin 91383489 1000 30 D43 D49 73632
  */
 #include "./chess-library/include/chess.hpp"
 #include <chrono>
@@ -241,32 +243,72 @@ private:
   }
 };
 
+class DepthFilter {
+public:
+  DepthFilter(int max_depth) : max_depth(max_depth) {}
+  void startMoves() { depth = 0; }
+  void move(std::string_view move, std::string_view comment) { depth++; }
+  bool shouldSkip() { return depth > max_depth; }
+
+private:
+  const int max_depth;
+  int depth;
+};
+
+class EcoFilter {
+public:
+  EcoFilter(const vector<string> &valid_codes)
+      : valid_codes(valid_codes.begin(), valid_codes.end()) {}
+  void startPgn() { eco = ""; }
+  void header(std::string_view key, std::string_view value) {
+    if (key == "ECO") {
+      eco = string(value);
+    }
+  }
+  bool shouldSkip() { return valid_codes.find(eco) == valid_codes.end(); }
+
+private:
+  set<string> valid_codes;
+  string eco;
+};
+
 class BookVisitor : public pgn::Visitor {
 public:
   explicit BookVisitor(int n_games, int seed, int probability,
-                       const string &filename)
+                       const string &filename, int max_depth,
+                       const vector<string> &valid_codes)
       : header_filter(std::make_unique<HeaderFilter>()),
         probability_filter(
             std::make_unique<ProbabilityFilter>(seed, probability)),
         progress_printer(std::make_unique<ProgressPrinter>(n_games)),
-        book_creator(std::make_unique<BookCreator>(filename)) {}
+        book_creator(std::make_unique<BookCreator>(filename)),
+        depth_filter(std::make_unique<DepthFilter>(max_depth)),
+        eco_filter(std::make_unique<EcoFilter>(valid_codes)) {}
   void startPgn() {
     header_filter->startPgn();
     probability_filter->startPgn();
     progress_printer->startPgn();
+    eco_filter->startPgn();
   }
   void startMoves() {
-    if (header_filter->shouldSkip() || probability_filter->shouldSkip()) {
+    if (header_filter->shouldSkip() || eco_filter->shouldSkip() ||
+        probability_filter->shouldSkip()) {
       skipPgn(true);
       return;
     }
     progress_printer->startMoves();
     book_creator->startMoves();
+    depth_filter->startMoves();
   }
   void header(std::string_view key, std::string_view value) {
     header_filter->header(key, value);
+    eco_filter->header(key, value);
   }
   void move(std::string_view move, std::string_view comment) {
+    depth_filter->move(move, comment);
+    if (depth_filter->shouldSkip()) {
+      return;
+    }
     book_creator->move(move, comment);
   }
   void endPgn() {}
@@ -277,23 +319,48 @@ private:
   std::unique_ptr<ProbabilityFilter> probability_filter;
   std::unique_ptr<ProgressPrinter> progress_printer;
   std::unique_ptr<BookCreator> book_creator;
+  std::unique_ptr<DepthFilter> depth_filter;
+  std::unique_ptr<EcoFilter> eco_filter;
 };
+
+vector<string> genEcoCodes(const string &start, const string &end) {
+  vector<string> codes;
+  string code = start;
+  while (code != end) {
+    codes.push_back(code);
+    code[2]++;
+    if (code[2] > '9') {
+      code[2] = '0';
+      code[1]++;
+    }
+    if (code[1] > '9') {
+      code[1] = '0';
+      code[0]++;
+    }
+  }
+  codes.push_back(end);
+  return codes;
+}
 
 int main(int argc, char *argv[]) {
   std::ios_base::sync_with_stdio(false);
   std::cin.tie(nullptr);
-  if (argc < 5) {
+  if (argc < 8) {
     cerr << "Usage: " << argv[0]
-         << " <output file> <n_games> <probability> <seed> \n";
+         << " <output file> <n_games> <probability> <max_depth> "
+            "<start_eco_code> <end_eco_code> <seed>\n";
     return 1;
   }
   std::string filename = argv[1];
   int n_games = std::stoi(argv[2]);
   int probability = std::stoi(argv[3]);
-  int seed = std::stoi(argv[4]);
-  // auto vis = std::make_unique<BookVisitor>(91383489, 73632, 1000);
-  auto vis =
-      std::make_unique<BookVisitor>(n_games, seed, probability, filename);
+  int max_depth = std::stoi(argv[4]);
+  string start_eco_code = argv[5];
+  string end_eco_code = argv[6];
+  int seed = std::stoi(argv[7]);
+  vector<string> valid_codes = genEcoCodes(start_eco_code, end_eco_code);
+  auto vis = std::make_unique<BookVisitor>(n_games, seed, probability, filename,
+                                           max_depth, valid_codes);
 
   pgn::StreamParser parser(std::cin);
   parser.readGames(*vis);

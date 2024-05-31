@@ -1,12 +1,6 @@
-// NOTE: based on example that uses the chess.js library:
-// https://github.com/jhlywa/chess.js
 var board = null;
 var game = new Chess();
 var $status = $("#status");
-var $fen = $("#fen");
-var $pgn = $("#pgn");
-var whiteSquareGrey = '#a9a9a9';
-var blackSquareGrey = '#696969';
 const whiteSquarePink = '#FFB6C1';
 const blackSquarePink = '#FF69B4';
 let promotion_running = false;
@@ -169,8 +163,6 @@ function updateStatus() {
   }
 
   $status.html(status);
-  $fen.html(game.fen());
-  $pgn.html(game.pgn());
   console.log(game.pgn());
 }
 
