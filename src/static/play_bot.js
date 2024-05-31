@@ -206,5 +206,6 @@ freedom_degree.oninput = function () {
 }
 $('#play-button').on('click', async function () {
   $(this).off('click');
+  $(this).prop('disabled', true);
   await startGame();
 });
