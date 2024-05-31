@@ -6,6 +6,8 @@ import chess.engine
 import random
 import os
 import dataclasses
+import glob
+import argparse
 
 # big_book - 1 934 385 games
 # semi_slav - 141 640 games
@@ -16,8 +18,7 @@ app = Flask(__name__)
 app.secret_key = 'KEY_EASY_TO_HACK'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=10)
 BOOK_READER_PATH = os.path.join('static', 'book_reader')
-STOCKFISH_PATH = os.path.join('static', 'stockfish',
-                              'stockfish-ubuntu-x86-64-avx2')
+STOCKFISH_PATH = glob.glob(os.path.join('static', 'stockfish', 'stockfish*'))[0]
 BOOKS_DIR = os.path.join('static', 'books')
 BOOKS = ['tree', 'big_book', 'semi_slav']
 
@@ -157,7 +158,14 @@ def make_move():
     return {'fen': fen}
 
 
+parser = argparse.ArgumentParser()
+
 # main driver
 if __name__ == '__main__':
+    parser.add_argument('--host', type=str, default='localhost')
+    parser.add_argument('--port', type=int, default=5000)
+    parser.add_argument('--debug', type=bool, default=False)
+    args = parser.parse_args()
+    print(args)
     # start HTTP server
-    app.run(debug=True, threaded=True)
+    app.run(host=args.host, port=args.port, debug=args.debug, threaded=True)

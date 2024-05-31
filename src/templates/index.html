@@ -7,38 +7,8 @@
 {% block body %}
 {{super()}}
 <div class="container text-center">
-  <div class="row"></div>
   <div class="row align-items-center" style="margin-top: 20px">
-    <div class="col">One of three columns</div>
-    <div class="col-5">
-      <div id="board-container" class="container-fluid">
-        <div id="board"></div>
-      </div>
-      <label>Status:</label>
-      <div id="status"></div>
-      <label>FEN:</label>
-      <div id="fen"></div>
-      <label>PGN:</label>
-      <div id="pgn"></div>
-    </div>
-    <div class="col">
-      <label for="bot-lvl-form" class="form-label">Bot lvl: 10</label>
-      <input
-        type="range"
-        class="form-range"
-        min="1"
-        max="20"
-        id="bot-lvl-form"
-      />
-    </div>
+  <h1>Welcome to Chess Opening Trainer!</h1>
   </div>
 </div>
-{% endblock %}
-
-{% block after_body %}
-<script
-  type="text/javascript"
-  language="javascript"
-  src="{{url_for('static', filename='play_bot.js')}}"
-></script>
 {% endblock %}
