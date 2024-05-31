@@ -12,7 +12,7 @@ function onDragStart(source, piece, position, orientation) {
   }
   // do not pick up pieces if the game is over
   if (game.game_over()) return false;
-  if (game.turn() !== player_color[0]) return false;
+  if (game.turn() !== player_on_move[0]) return false;
   // only pick up pieces for the side to move
   if (
     (game.turn() === "w" && piece.search(/^b/) !== -1) ||
@@ -167,6 +167,7 @@ function updateStatus() {
 }
 
 async function startGame() {
+  player_on_move = player_color;
   if (player_color === "black") {
     board.orientation('black');
     await new Promise((resolve) => setTimeout(resolve, 1000));

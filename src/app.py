@@ -16,11 +16,12 @@ app = Flask(__name__)
 app.secret_key = 'KEY_EASY_TO_HACK'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=10)
 BOOK_READER_PATH = os.path.join('static', 'book_reader')
+STOCKFISH_PATH = os.path.join('static', 'stockfish',
+                              'stockfish-ubuntu-x86-64-avx2')
 BOOKS_DIR = os.path.join('static', 'books')
 BOOKS = ['tree', 'big_book', 'semi_slav']
 
-engine = chess.engine.SimpleEngine.popen_uci(
-    '../stockfish/stockfish-ubuntu-x86-64-avx2')
+engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 book_reader = BookReader.popen(BOOK_READER_PATH,
                                os.path.join(BOOKS_DIR, 'tree.bin'))
 
@@ -127,7 +128,7 @@ def root():
 
 
 def choose_engine_move(board: chess.Board):
-    result = engine.play(board, chess.engine.Limit(time=1.0))
+    result = engine.play(board, chess.engine.Limit(time=0.5))
     board.push(result.move)
     return board.fen()
 
