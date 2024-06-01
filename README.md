@@ -1,7 +1,14 @@
 # chess-trainer
 # Instalation
-Download the repository and run following commands from the repository directory.
+Download the repository and run:
 ```bash
+cd chess-trainer
+chmod +x install.sh
+./install.sh
+```
+or execute following commands:
+```bash
+cd chess-trainer
 # Install required packages
 python3 -m venv .venv
 source .venv/bin/activate
