@@ -184,7 +184,7 @@ class Edge:
 
 @dataclasses.dataclass
 class EdgeResult:
-    board: chess.Board = chess.Board()
+    board: chess.Board = dataclasses.field(default_factory=chess.Board)
     edges: list[Edge] = dataclasses.field(default_factory=list)
 
 
