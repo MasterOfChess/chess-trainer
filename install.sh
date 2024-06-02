@@ -10,6 +10,7 @@ git clone https://github.com/official-stockfish/Stockfish.git
 cd Stockfish/src
 make -j profile-build ARCH=x86-64
 cd ../..
+mkdir src/static/stockfish
 cp Stockfish/src/stockfish* src/static/stockfish/
 rm -rf Stockfish
 
