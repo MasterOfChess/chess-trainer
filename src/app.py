@@ -10,6 +10,13 @@ import dataclasses
 import glob
 import argparse
 import io
+import logging
+
+logging.basicConfig(
+        format='%(asctime)s:%(threadName)s: %(filename)s:%(lineno)d %(message)s',
+        level=logging.DEBUG,
+        datefmt='%H:%M:%S')
+logger = logging.getLogger(__name__)
 
 # big_book - 1 934 385 games
 # semi_slav - 141 640 games
@@ -57,13 +64,14 @@ OPENINGS = [
 
 
 def change_book(new_book):
-    if OPENINGS[session['current_book']].book != new_book:
-        global book_reader
-        book_reader.quit()
-        book_reader = BookReader.popen(
-            BOOK_READER_PATH, os.path.join(BOOKS_DIR, new_book + '.bin'))
-        book_idx = [o.book for o in OPENINGS].index(new_book)
-        session['current_book'] = book_idx
+    # if OPENINGS[session['current_book']].book != new_book:
+    global book_reader
+    book_reader.quit()
+    logger.debug('Opening book: %s.bin', new_book)
+    book_reader = BookReader.popen(BOOK_READER_PATH,
+                                   os.path.join(BOOKS_DIR, new_book + '.bin'))
+    book_idx = [o.book for o in OPENINGS].index(new_book)
+    session['current_book'] = book_idx
 
 
 def initialize_config():
@@ -103,7 +111,7 @@ def init_new_game():
 def set_bot_lvl():
     lvl = int(request.form.get('bot_lvl'))
     session['bot_lvl'] = lvl
-    print(f'Setting bot_lvl to {lvl}')
+    logger.debug('Setting bot_lvl to %s', lvl)
     engine.configure({'Skill Level': lvl})
     return {'bot_lvl': lvl}
 
@@ -112,7 +120,7 @@ def set_bot_lvl():
 def set_freedom_degree():
     deg = int(request.form.get('freedom_degree'))
     session['freedom_degree'] = deg
-    print(f'Setting freedom_degree to {deg}')
+    logger.debug('Setting freedom_degree to %d', deg)
     return {'freedom_degree': deg}
 
 
@@ -137,7 +145,7 @@ def choose_move(board: chess.Board):
     edge_result = book_reader.from_fen(board.fen())
     if not edge_result.edges:
         return choose_engine_move(board)
-    print('\n'.join(map(str, edge_result.edges)))
+    logger.debug('\n'.join(map(str, edge_result.edges)))
     available_edges = edge_result.edges[:session['freedom_degree']]
     edge = random.choice(available_edges)
     board.push(edge.move)
@@ -199,7 +207,7 @@ def change_nickname():
 
 @app.route('/query_game_state', methods=['POST'])
 def query_game_state():
-    print('Current state:', str(current_game.mainline_moves()))
+    logger.debug('Current state: %s', str(current_game.mainline_moves()))
     return {
         'fen': current_board.fen(),
         'white': current_game.headers['White'],
@@ -262,7 +270,7 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=5000)
     parser.add_argument('--debug', type=bool, default=False)
     parse_args = parser.parse_args()
-    print(parse_args)
+    logger.debug(parse_args)
     # start HTTP server
     app.run(host=parse_args.host,
             port=parse_args.port,
