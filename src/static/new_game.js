@@ -3,7 +3,7 @@ $('.choose-color').on('click', function () {
   console.log(color);
   $.post("/choose_color", { color: color }, function (data) {
     if (data.response == 'success') {
-      window.location = '/play';
+      window.location = data.redirect;
     }
   });
 });

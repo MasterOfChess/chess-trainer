@@ -191,6 +191,28 @@ function onSnapEnd() {
   board.position(game.fen());
 }
 
+function updatePlayerCardBorder() {
+  if (player_on_move === 'noone') {
+    $('#border-bot').removeClass('border-warning');
+    $('#border-top').removeClass('border-warning');
+    $('#border-bot').addClass('border-secondary');
+    $('#border-top').addClass('border-secondary');
+    return;
+  }
+  if (game.turn() === player_on_move[0]) {
+    $('#border-bot').addClass('border-warning');
+    $('#border-bot').removeClass('border-secondary');
+    $('#border-top').addClass('border-secondary');
+    $('#border-top').removeClass('border-warning');
+  }
+  else {
+    $('#border-top').addClass('border-warning');
+    $('#border-top').removeClass('border-secondary');
+    $('#border-bot').addClass('border-secondary');
+    $('#border-bot').removeClass('border-warning');
+  }
+}
+
 function updateStatus() {
   console.log("Updating status");
   var status = "";
@@ -223,6 +245,7 @@ function updateStatus() {
 
   $status.html(status);
   console.log(game.pgn());
+  updatePlayerCardBorder();
   return true;
 }
 
@@ -230,12 +253,14 @@ async function startGame() {
   player_on_move = player_color;
   if (player_color === "black") {
     board.orientation('black');
+    updateStatus();
     await new Promise((resolve) => setTimeout(resolve, 1000));
     await askEngineToPlayMove();
   }
   else {
     board.orientation('white');
   }
+  updateStatus();
 }
 
 $('#play-button').on('click', async function () {

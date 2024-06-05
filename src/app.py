@@ -36,35 +36,38 @@ class Opening:
 
 
 OPENINGS = [
-    Opening('tree', 'Small Book'),
-    Opening('big_book', 'Big Book'),
-    Opening('semi_slav', 'Semi-Slav')
+    Opening('tree', 'Bot Small Book'),
+    Opening('big_book', 'Bot Big Book'),
+    Opening('semi_slav', 'Bot Semi Slav')
 ]
 
 # Session fields
 # bot_lvl: int [1, 20]
 # freedom_degree: int [1, 6]
 # color: white | black
-# current_book: str
+# current_book: int
 # in_book: bool
 # initialized: bool
+# nickname: str
 
 
 def change_book(new_book):
-    if session['current_book'] != new_book:
+    if OPENINGS[session['current_book']].book != new_book:
         global book_reader
         book_reader.quit()
         book_reader = BookReader.popen(
             BOOK_READER_PATH, os.path.join(BOOKS_DIR, new_book + '.bin'))
-        session['current_book'] = new_book
+        book_idx = [o.book for o in OPENINGS].index(new_book)
+        session['current_book'] = book_idx
 
 
 def initialize_config():
     if 'initialized' not in session:
         session.permanent = True
         session['initialized'] = True
-        session['current_book'] = 'tree'
+        session['current_book'] = 0
         session['color_mode'] = 'dark'
+        session['nickname'] = 'Default Player'
 
 
 def init_new_game():
@@ -97,7 +100,7 @@ def choose_color():
     color = request.form.get('color')
     color = 'white' if color == 'white-color' else 'black'
     session['color'] = color
-    return {'response': 'success'}
+    return {'response': 'success', 'redirect': url_for('play')}
 
 
 def choose_engine_move(board: chess.Board):
@@ -119,6 +122,16 @@ def choose_move(board: chess.Board):
     return board.fen()
 
 
+def render_template_with_session(file: str, *args, **kwargs):
+    return render_template(
+        file,
+        color_mode=session['color_mode'],
+        current_nickname=session['nickname'],
+        current_opponent=OPENINGS[session['current_book']].text,
+        *args,
+        **kwargs)
+
+
 @app.route('/make_move', methods=['POST'])
 def make_move():
     fen = request.form.get('fen')
@@ -137,6 +150,13 @@ def toggle_color_mode():
     return {'color_mode': session['color_mode']}
 
 
+@app.route('/change_nickname', methods=['POST'])
+def change_nickname():
+    nickname = request.form.get('nickname')
+    session['nickname'] = nickname
+    return {}
+
+
 # Main routes
 
 
@@ -144,15 +164,14 @@ def toggle_color_mode():
 def root():
     initialize_config()
     init_new_game()
-    return render_template('index.html', color_mode=session['color_mode'])
+    return render_template_with_session('index.html')
 
 
 @app.route('/choose_opening', methods=['GET'])
 def choose_opening():
     initialize_config()
-    return render_template('choose_opening.html',
-                           color_mode=session['color_mode'],
-                           openings_list=OPENINGS)
+    return render_template_with_session('choose_opening.html',
+                                        openings_list=OPENINGS)
 
 
 @app.route('/openings/<name>')
@@ -165,16 +184,15 @@ def openings(name):
 @app.route('/new_game', methods=['GET'])
 def new_game():
     initialize_config()
-    return render_template('new_game.html', color_mode=session['color_mode'])
+    return render_template_with_session('new_game.html')
 
 
 @app.route('/play')
 def play():
     initialize_config()
     init_new_game()
-    return render_template('play.html',
-                           color_mode=session['color_mode'],
-                           player_color=session['color'])
+    return render_template_with_session('play.html',
+                                        player_color=session['color'])
 
 
 parser = argparse.ArgumentParser()
@@ -184,7 +202,10 @@ if __name__ == '__main__':
     parser.add_argument('--host', type=str, default='localhost')
     parser.add_argument('--port', type=int, default=5000)
     parser.add_argument('--debug', type=bool, default=False)
-    args = parser.parse_args()
-    print(args)
+    parse_args = parser.parse_args()
+    print(parse_args)
     # start HTTP server
-    app.run(host=args.host, port=args.port, debug=args.debug, threaded=True)
+    app.run(host=parse_args.host,
+            port=parse_args.port,
+            debug=parse_args.debug,
+            threaded=True)

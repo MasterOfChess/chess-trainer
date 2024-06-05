@@ -1,5 +1,5 @@
 {% macro nav_link(endpoint, text, is_active) %}
-<li class="nav-item">
+<li class="nav-item px-2">
   <a
     class="nav-link {{ 'active' if is_active else '' }}"
     href="{{ '#' if endpoint == '#' else url_for(endpoint) }}"
