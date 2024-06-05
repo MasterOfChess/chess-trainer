@@ -1,13 +1,15 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, send_file
 import datetime
 from book_reader_protocol import BookReader
 import chess
 import chess.engine
+import chess.pgn
 import random
 import os
 import dataclasses
 import glob
 import argparse
+import io
 
 # big_book - 1 934 385 games
 # semi_slav - 141 640 games
@@ -27,6 +29,9 @@ ENGINE_THINKING_TIME = 0.5
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 book_reader = BookReader.popen(BOOK_READER_PATH,
                                os.path.join(BOOKS_DIR, 'tree.bin'))
+current_board = chess.Board()
+current_game = chess.pgn.Game()
+current_node = None
 
 
 @dataclasses.dataclass
@@ -68,12 +73,29 @@ def initialize_config():
         session['current_book'] = 0
         session['color_mode'] = 'dark'
         session['nickname'] = 'Default Player'
+        session['color'] = 'white'
 
 
 def init_new_game():
+    global current_board
+    global current_game
+    global current_node
     session['in_book'] = True
     session['freedom_degree'] = 3
     session['bot_lvl'] = 10
+    current_board = chess.Board()
+    current_game = chess.pgn.Game()
+    current_node = None
+    current_game.headers['Event'] = 'Chess Opening Trainer training'
+    current_game.headers.pop('Site')
+    current_game.headers.pop('Round')
+    if session['color'] == 'black':
+        current_game.headers['Black'] = session['nickname']
+        current_game.headers['White'] = OPENINGS[session['current_book']].text
+    else:
+        current_game.headers['White'] = session['nickname']
+        current_game.headers['Black'] = OPENINGS[session['current_book']].text
+    current_game.headers['Date'] = datetime.datetime.now().strftime('%Y-%m-%d')
     engine.configure({'Skill Level': session['bot_lvl']})
 
 
@@ -132,13 +154,27 @@ def render_template_with_session(file: str, *args, **kwargs):
         **kwargs)
 
 
+def update_current_node():
+    global current_node
+    if current_node is None:
+        current_node = current_game.add_variation(current_board.peek())
+    else:
+        current_node = current_node.add_variation(current_board.peek())
+
+
 @app.route('/make_move', methods=['POST'])
 def make_move():
     fen = request.form.get('fen')
-    board = chess.Board(fen)
-    if (board.is_game_over()):
-        return {'fen': board.fen()}
-    fen = choose_move(board)
+    move_san = request.form.get('move_san')
+    if move_san != 'None':
+        current_board.push_san(move_san)
+        update_current_node()
+    # board = chess.Board(fen)
+    if current_board.is_game_over():
+        current_game.headers['Result'] = current_board.result()
+        return {'fen': current_board.fen()}
+    fen = choose_move(current_board)
+    update_current_node()
 
     return {'fen': fen}
 
@@ -154,7 +190,30 @@ def toggle_color_mode():
 def change_nickname():
     nickname = request.form.get('nickname')
     session['nickname'] = nickname
+    if session['color'] == 'white':
+        current_game.headers['White'] = nickname
+    else:
+        current_game.headers['Black'] = nickname
     return {}
+
+
+@app.route('/query_game_state', methods=['POST'])
+def query_game_state():
+    print('Current state:', str(current_game.mainline_moves()))
+    return {
+        'fen': current_board.fen(),
+        'white': current_game.headers['White'],
+        'black': current_game.headers['Black'],
+        'date': current_game.headers['Date'],
+        'pgn': str(current_game.mainline_moves()),
+        'result': current_board.result()
+    }
+
+
+@app.route('/download_pgn')
+def download_pgn():
+    pgn = current_game.accept(chess.pgn.StringExporter())
+    return send_file(io.BytesIO(pgn.encode()), download_name='game.pgn')
 
 
 # Main routes

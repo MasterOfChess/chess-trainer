@@ -146,13 +146,12 @@ function pieceColor(piece) {
 }
 
 
-async function askEngineToPlayMove() {
+async function askEngineToPlayMove(move_san) {
   await new Promise((resolve) => {
-    $.post("/make_move", { fen: game.fen() }, function (data) {
+    $.post("/make_move", { fen: game.fen(), move_san: move_san }, function (data) {
       setTimeout(() => {
         game.load(data.fen);
         board.position(game.fen());
-        console.log("Engine played move");
         resolve();
       }, 300);
     });
@@ -174,11 +173,12 @@ function onDrop(source, target, piece) {
   if (move === null) return "snapback";
   async function handleMove() {
     await promotionOnDrop(move, source, target, piece);
+    console.log("Making move: " + move.san);
     game.move(move);
     board.position(game.fen());
     updateStatus();
 
-    await askEngineToPlayMove();
+    await askEngineToPlayMove(move.san);
     updateStatus();
   }
   handleMove();
@@ -213,38 +213,50 @@ function updatePlayerCardBorder() {
   }
 }
 
+async function updatePGNCard() {
+  await new Promise((resolve) => {
+    $.post('/query_game_state', {}, function (data) {
+      console.log(data.pgn);
+      $('#pgn').html(data.pgn);
+      // game.loadPgn(data.pgn);
+      // board.position(game.fen(), false);
+      resolve();
+    });
+  });
+}
+
 function updateStatus() {
   console.log("Updating status");
-  var status = "";
+  // var status = "";
 
-  var moveColor = "White";
-  if (game.turn() === "b") {
-    moveColor = "Black";
-  }
-  console.log("Move color: " + moveColor);
+  // var moveColor = "White";
+  // if (game.turn() === "b") {
+  //   moveColor = "Black";
+  // }
+  // console.log("Move color: " + moveColor);
 
-  // checkmate?
-  if (game.in_checkmate()) {
-    status = "Game over, " + moveColor + " is in checkmate.";
-  }
+  // // checkmate?
+  // if (game.in_checkmate()) {
+  //   status = "Game over, " + moveColor + " is in checkmate.";
+  // }
 
-  // draw?
-  else if (game.in_draw()) {
-    status = "Game over, drawn position";
-  }
+  // // draw?
+  // else if (game.in_draw()) {
+  //   status = "Game over, drawn position";
+  // }
 
-  // game still on
-  else {
-    status = moveColor + " to move";
+  // // game still on
+  // else {
+  //   status = moveColor + " to move";
 
-    // check?
-    if (game.in_check()) {
-      status += ", " + moveColor + " is in check";
-    }
-  }
+  //   // check?
+  //   if (game.in_check()) {
+  //     status += ", " + moveColor + " is in check";
+  //   }
+  // }
 
-  $status.html(status);
-  console.log(game.pgn());
+  // $status.html(status);
+  updatePGNCard();
   updatePlayerCardBorder();
   return true;
 }
@@ -255,7 +267,7 @@ async function startGame() {
     board.orientation('black');
     updateStatus();
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    await askEngineToPlayMove();
+    await askEngineToPlayMove("None");
   }
   else {
     board.orientation('white');
