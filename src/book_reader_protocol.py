@@ -147,6 +147,7 @@ class BaseProtocol():
         while True:
             try:
                 command = self.queue.get_nowait()
+                command.start(self)
                 command.terminate()
             except queue.Empty:
                 break

@@ -22,6 +22,8 @@ STOCKFISH_PATH = glob.glob(os.path.join('static', 'stockfish', 'stockfish*'))[0]
 BOOKS_DIR = os.path.join('static', 'books')
 BOOKS = ['tree', 'big_book', 'semi_slav']
 
+ENGINE_THINKING_TIME = 0.5
+
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 book_reader = BookReader.popen(BOOK_READER_PATH,
                                os.path.join(BOOKS_DIR, 'tree.bin'))
@@ -39,6 +41,14 @@ OPENINGS = [
     Opening('semi_slav', 'Semi-Slav')
 ]
 
+# Session fields
+# bot_lvl: int [1, 20]
+# freedom_degree: int [1, 6]
+# color: white | black
+# current_book: str
+# in_book: bool
+# initialized: bool
+
 
 def change_book(new_book):
     if session['current_book'] != new_book:
@@ -50,15 +60,11 @@ def change_book(new_book):
 
 
 def initialize_config():
-    session.permanent = True
-    if 'bot_lvl' not in session:
-        session['bot_lvl'] = 10
-    if 'freedom_degree' not in session:
-        session['freedom_degree'] = 3
-    if 'color' not in session:
-        session['color'] = 'white'
-    if 'current_book' not in session:
+    if 'initialized' not in session:
+        session.permanent = True
+        session['initialized'] = True
         session['current_book'] = 'tree'
+        session['color_mode'] = 'dark'
 
 
 def init_new_game():
@@ -66,19 +72,6 @@ def init_new_game():
     session['freedom_degree'] = 3
     session['bot_lvl'] = 10
     engine.configure({'Skill Level': session['bot_lvl']})
-
-
-@app.route('/openings/<name>')
-def openings(name):
-    initialize_config()
-    change_book(name)
-    return redirect(url_for('new_game'))
-
-
-@app.route('/choose_opening', methods=['GET'])
-def choose_opening():
-    initialize_config()
-    return render_template('choose_opening.html', openings_list=OPENINGS)
 
 
 @app.route('/set_bot_lvl', methods=['POST'])
@@ -98,12 +91,6 @@ def set_freedom_degree():
     return {'freedom_degree': deg}
 
 
-@app.route('/new_game', methods=['GET'])
-def new_game():
-    initialize_config()
-    return render_template('new_game.html')
-
-
 @app.route('/choose_color', methods=['POST'])
 def choose_color():
     initialize_config()
@@ -113,23 +100,8 @@ def choose_color():
     return {'response': 'success'}
 
 
-@app.route('/play')
-def play():
-    initialize_config()
-    init_new_game()
-    return render_template('play.html', player_color=session['color'])
-
-
-# define root(index) route
-@app.route('/')
-def root():
-    initialize_config()
-    init_new_game()
-    return render_template('index.html')
-
-
 def choose_engine_move(board: chess.Board):
-    result = engine.play(board, chess.engine.Limit(time=0.5))
+    result = engine.play(board, chess.engine.Limit(time=ENGINE_THINKING_TIME))
     board.push(result.move)
     return board.fen()
 
@@ -156,6 +128,53 @@ def make_move():
     fen = choose_move(board)
 
     return {'fen': fen}
+
+
+@app.route('/toggle_color_mode', methods=['POST'])
+def toggle_color_mode():
+    session[
+        'color_mode'] = 'light' if session['color_mode'] == 'dark' else 'dark'
+    return {'color_mode': session['color_mode']}
+
+
+# Main routes
+
+
+@app.route('/')
+def root():
+    initialize_config()
+    init_new_game()
+    return render_template('index.html', color_mode=session['color_mode'])
+
+
+@app.route('/choose_opening', methods=['GET'])
+def choose_opening():
+    initialize_config()
+    return render_template('choose_opening.html',
+                           color_mode=session['color_mode'],
+                           openings_list=OPENINGS)
+
+
+@app.route('/openings/<name>')
+def openings(name):
+    initialize_config()
+    change_book(name)
+    return redirect(url_for('new_game'))
+
+
+@app.route('/new_game', methods=['GET'])
+def new_game():
+    initialize_config()
+    return render_template('new_game.html', color_mode=session['color_mode'])
+
+
+@app.route('/play')
+def play():
+    initialize_config()
+    init_new_game()
+    return render_template('play.html',
+                           color_mode=session['color_mode'],
+                           player_color=session['color'])
 
 
 parser = argparse.ArgumentParser()
