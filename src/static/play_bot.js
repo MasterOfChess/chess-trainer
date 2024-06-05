@@ -3,23 +3,51 @@ var game = new Chess();
 var $status = $("#status");
 const whiteSquarePink = '#FFB6C1';
 const blackSquarePink = '#FF69B4';
-let promotion_running = false;
-function onDragStart(source, piece, position, orientation) {
-  console.log("onDragStart", source, piece, position, orientation);
-  if (promotion_running) {
-    $('#board .square-' + source).get(0).click();
-    console.log("Clicked " + source);
-  }
-  // do not pick up pieces if the game is over
-  if (game.game_over()) return false;
-  if (game.turn() !== player_on_move[0]) return false;
-  // only pick up pieces for the side to move
-  if (
-    (game.turn() === "w" && piece.search(/^b/) !== -1) ||
-    (game.turn() === "b" && piece.search(/^w/) !== -1)
-  ) {
-    return false;
-  }
+var promotion_running = false;
+
+/* **************************************
+* Bot control actions
+************************************** */
+
+
+var bot_lvl_form = document.getElementById("bot-lvl-form");
+bot_lvl_form.oninput = function () {
+  let bot_lvl = this.value;
+  $('label[for="bot-lvl-form"]').text("Bot lvl: " + bot_lvl);
+  $.post("/set_bot_lvl", { bot_lvl: bot_lvl }, function (data) {
+  });
+}
+
+var freedom_degree_form = document.getElementById("freedom-degree-form");
+freedom_degree_form.oninput = function () {
+  let freedom_degree = this.value;
+  $('label[for="freedom-degree-form"]').text("Freedom degree: " + freedom_degree);
+  $.post("/set_freedom_degree", { freedom_degree: freedom_degree }, function (data) {
+  });
+}
+
+
+/* **************************************
+* Board actions
+************************************** */
+
+var config = {
+  draggable: true,
+  position: "start",
+  onDragStart: onDragStart,
+  onDrop: onDrop,
+  onSnapEnd: onSnapEnd,
+};
+
+board = Chessboard("board", config);
+
+updateStatus();
+
+// Promotion logic
+
+function promotionOnDragStart(source, piece, position, orientation) {
+  $('#board .square-' + source).get(0).click();
+  console.log("Clicked " + source);
 }
 
 function promotionSquaresUnder(square) {
@@ -40,10 +68,6 @@ function promotionSquaresUnder(square) {
   return squares;
 }
 
-function pieceColor(piece) {
-  return piece.search(/^w/) !== -1 ? 'w' : 'b';
-}
-
 async function promotionHighlightSquares() {
   $('.promotion-square').each(function (index) {
     if ($(this).hasClass('black-3c85d')) {
@@ -59,6 +83,18 @@ function promotionRemoveHighlight() {
   $('#board .square-55d63').css('background', '')
 }
 
+function promotionPrepareAnimation(color, target) {
+  promotion_running = true;
+  for (let square of promotionSquaresUnder(target)) {
+    let $square = $('#board .square-' + square.coord);
+    game.put({ type: square.piece, color: color }, square.coord);
+    console.log("Putting " + square.piece + " at " + square.coord);
+    $square.addClass('promotion-square');
+    $square.attr('data-promotion', square.piece);
+  }
+  promotionHighlightSquares();
+}
+
 async function promotionOnDrop(move, source, target, piece) {
   if (move.promotion) {
     let fen = game.fen();
@@ -66,15 +102,7 @@ async function promotionOnDrop(move, source, target, piece) {
     game.remove(source);
     let new_piece = await new Promise((resolve) => {
       console.log("Promoting");
-      promotion_running = true;
-      for (let square of promotionSquaresUnder(target)) {
-        let $square = $('#board .square-' + square.coord);
-        game.put({ type: square.piece, color: color }, square.coord);
-        console.log("Putting " + square.piece + " at " + square.coord);
-        $square.addClass('promotion-square');
-        $square.attr('data-promotion', square.piece);
-      }
-      promotionHighlightSquares();
+      promotionPrepareAnimation(color, target);
 
       $('.promotion-square').on('click', function () {
         console.log('click', $(this).attr('data-square'));
@@ -95,15 +123,43 @@ async function promotionOnDrop(move, source, target, piece) {
   }
 }
 
+function onDragStart(source, piece, position, orientation) {
+  console.log("onDragStart", source, piece, position, orientation);
+  if (promotion_running) {
+    promotionOnDragStart(source, piece, position, orientation);
+  }
+  // do not pick up pieces if the game is over
+  if (game.game_over()) return false;
+  if (game.turn() !== player_on_move[0]) return false;
+  // only pick up pieces for the side to move
+  if (
+    (game.turn() === "w" && piece.search(/^b/) !== -1) ||
+    (game.turn() === "b" && piece.search(/^w/) !== -1)
+  ) {
+    return false;
+  }
+}
+
+
+function pieceColor(piece) {
+  return piece.search(/^w/) !== -1 ? 'w' : 'b';
+}
+
+
 async function askEngineToPlayMove() {
-  $.post("/make_move", { fen: game.fen() }, async function (data) {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    game.load(data.fen);
-    board.position(game.fen());
+  await new Promise((resolve) => {
+    $.post("/make_move", { fen: game.fen() }, function (data) {
+      setTimeout(() => {
+        game.load(data.fen);
+        board.position(game.fen());
+        console.log("Engine played move");
+        resolve();
+      }, 300);
+    });
   });
 }
 
-async function onDrop(source, target, piece) {
+function onDrop(source, target, piece) {
   console.log("onDrop", source, target);
   let is_legal = (source, target) => {
     let legal_moves = game
@@ -116,14 +172,16 @@ async function onDrop(source, target, piece) {
   };
   let move = is_legal(source, target);
   if (move === null) return "snapback";
-  // Handle promotions
-  await promotionOnDrop(move, source, target, piece);
-  game.move(move);
-  board.position(game.fen());
+  async function handleMove() {
+    await promotionOnDrop(move, source, target, piece);
+    game.move(move);
+    board.position(game.fen());
+    updateStatus();
 
-  await askEngineToPlayMove();
-
-  updateStatus();
+    await askEngineToPlayMove();
+    updateStatus();
+  }
+  handleMove();
 }
 
 // update the board position after the piece snap
@@ -141,6 +199,7 @@ function updateStatus() {
   if (game.turn() === "b") {
     moveColor = "Black";
   }
+  console.log("Move color: " + moveColor);
 
   // checkmate?
   if (game.in_checkmate()) {
@@ -164,6 +223,7 @@ function updateStatus() {
 
   $status.html(status);
   console.log(game.pgn());
+  return true;
 }
 
 async function startGame() {
@@ -178,32 +238,6 @@ async function startGame() {
   }
 }
 
-var config = {
-  draggable: true,
-  position: "start",
-  onDragStart: onDragStart,
-  onDrop: onDrop,
-  onSnapEnd: onSnapEnd,
-};
-board = Chessboard("board", config);
-
-updateStatus();
-let bot_lvl_form = document.getElementById("bot-lvl-form");
-bot_lvl_form.oninput = function () {
-  let bot_lvl = this.value;
-  $('label[for="bot-lvl-form"]').text("Bot lvl: " + bot_lvl);
-  $.post("/set_bot_lvl", { bot_lvl: bot_lvl }, function (data) {
-    console.log(data);
-  });
-}
-let freedom_degree = document.getElementById("freedom-degree-form");
-freedom_degree.oninput = function () {
-  let freedom_degree = this.value;
-  $('label[for="freedom-degree-form"]').text("Freedom degree: " + freedom_degree);
-  $.post("/set_freedom_degree", { freedom_degree: freedom_degree }, function (data) {
-    console.log(data);
-  });
-}
 $('#play-button').on('click', async function () {
   $(this).off('click');
   $(this).prop('disabled', true);
