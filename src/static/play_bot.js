@@ -218,6 +218,8 @@ async function updatePGNCard() {
     $.post('/query_game_state', {}, function (data) {
       console.log(data.pgn);
       $('#pgn').html(data.pgn);
+      $('#eval-bar-bot').attr('height', data.score + '%');
+      $('#eval-bar-top').attr('height', (100 - data.score) + '%');
       // game.loadPgn(data.pgn);
       // board.position(game.fen(), false);
       resolve();
@@ -263,6 +265,14 @@ function updateStatus() {
 
 async function startGame() {
   player_on_move = player_color;
+  if (player_color === 'black') {
+    $('#eval-bar-bot-rect').attr('fill', 'black');
+    $('#eval-bar-top-rect').attr('fill', 'white');
+  }
+  else {
+    $('#eval-bar-bot-rect').attr('fill', 'white');
+    $('#eval-bar-top-rect').attr('fill', 'black');
+  }
   if (player_color === "black") {
     board.orientation('black');
     updateStatus();
@@ -279,4 +289,13 @@ $('#play-button').on('click', async function () {
   $(this).off('click');
   $(this).prop('disabled', true);
   await startGame();
+});
+
+$('#eval-bar-on').on('click', async function () {
+  $('#eval-bar-top').attr('display', 'block');
+  $('#eval-bar-bot').attr('display', 'block');
+});
+$('#eval-bar-off').on('click', async function () {
+  $('#eval-bar-top').attr('display', 'none');
+  $('#eval-bar-bot').attr('display', 'none');
 });

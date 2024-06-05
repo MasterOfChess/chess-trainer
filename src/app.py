@@ -13,9 +13,9 @@ import io
 import logging
 
 logging.basicConfig(
-        format='%(asctime)s:%(threadName)s: %(filename)s:%(lineno)d %(message)s',
-        level=logging.DEBUG,
-        datefmt='%H:%M:%S')
+    format='%(asctime)s:%(threadName)s: %(filename)s:%(lineno)d %(message)s',
+    level=logging.DEBUG,
+    datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
 
 # big_book - 1 934 385 games
@@ -34,6 +34,7 @@ BOOKS = ['tree', 'big_book', 'semi_slav']
 ENGINE_THINKING_TIME = 0.5
 
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+analyse_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 book_reader = BookReader.popen(BOOK_READER_PATH,
                                os.path.join(BOOKS_DIR, 'tree.bin'))
 current_board = chess.Board()
@@ -112,7 +113,6 @@ def set_bot_lvl():
     lvl = int(request.form.get('bot_lvl'))
     session['bot_lvl'] = lvl
     logger.debug('Setting bot_lvl to %s', lvl)
-    engine.configure({'Skill Level': lvl})
     return {'bot_lvl': lvl}
 
 
@@ -133,7 +133,12 @@ def choose_color():
     return {'response': 'success', 'redirect': url_for('play')}
 
 
+def update_engine_lvl(lvl: int):
+    engine.configure({'Skill Level': lvl})
+
+
 def choose_engine_move(board: chess.Board):
+    update_engine_lvl(session['bot_lvl'])
     result = engine.play(board, chess.engine.Limit(time=ENGINE_THINKING_TIME))
     board.push(result.move)
     return board.fen()
@@ -208,13 +213,36 @@ def change_nickname():
 @app.route('/query_game_state', methods=['POST'])
 def query_game_state():
     logger.debug('Current state: %s', str(current_game.mainline_moves()))
+    if not current_board.is_game_over():
+        info = analyse_engine.analyse(current_board,
+                                      chess.engine.Limit(time=0.1))
+        wins = info['score'].relative.wdl(ply=info['depth']).wins
+        draws = info['score'].relative.wdl(ply=info['depth']).draws
+        losses = info['score'].relative.wdl(ply=info['depth']).losses
+        logger.debug('depth: %d, score: %s, wins: %d, draws %d, losses: %d',
+                     info['depth'], info['score'], wins, draws, losses)
+        if (session['color'] == 'white' and
+                not info['score'].turn) or (session['color'] == 'black' and
+                                            info['score'].turn):
+            wins, losses = losses, wins
+        score = (wins + 0.5 * draws) / (wins + losses + draws)
+    else:
+        if current_board.result() == '1-0' and session['color'] == 'white':
+            score = 1
+        elif current_board.result() == '0-1' and session['color'] == 'black':
+            score = 1
+        elif current_board.result() == '1/2-1/2':
+            score = 0.5
+        else:
+            score = 0
     return {
         'fen': current_board.fen(),
         'white': current_game.headers['White'],
         'black': current_game.headers['Black'],
         'date': current_game.headers['Date'],
         'pgn': str(current_game.mainline_moves()),
-        'result': current_board.result()
+        'result': current_board.result(),
+        'score': str(int(100 * score))
     }
 
 
