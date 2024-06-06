@@ -35,8 +35,6 @@ BOOKS_DIR = os.path.join('static', 'books')
 ENGINE_THINKING_TIME = 0.5
 
 # Background jobs
-engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-analyse_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 book_reader = BookReader.popen(BOOK_READER_PATH)
 
 
@@ -127,7 +125,6 @@ def init_new_game():
         current_game.headers['Black'] = OPENINGS[session['current_book']].name
     current_game.headers['Date'] = datetime.datetime.now().strftime('%Y-%m-%d')
     update_game_state(current_board, current_game)
-    engine.configure({'Skill Level': session['bot_lvl']})
 
 
 @app.route('/set_bot_lvl', methods=['POST'])
@@ -155,13 +152,11 @@ def choose_color():
     return {'response': 'success', 'redirect': url_for('play')}
 
 
-def update_engine_lvl(lvl: int):
-    engine.configure({'Skill Level': lvl})
-
-
 def choose_engine_move(board: chess.Board):
-    update_engine_lvl(session['bot_lvl'])
+    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    engine.configure({'Skill Level': session['bot_lvl']})
     result = engine.play(board, chess.engine.Limit(time=ENGINE_THINKING_TIME))
+    engine.quit()
     board.push(result.move)
     return board.fen()
 
@@ -234,8 +229,10 @@ def query_game_state():
     current_board, current_game, _ = get_current_game_state()
     logger.debug('Current state: %s', str(current_game.mainline_moves()))
     if not current_board.is_game_over():
-        info = analyse_engine.analyse(current_board,
-                                      chess.engine.Limit(time=0.4))
+        engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+        engine.configure({'Skill Level': 20})
+        info = engine.analyse(current_board, chess.engine.Limit(time=0.4))
+        engine.quit()
         wins = info['score'].relative.wdl(ply=info['depth']).wins
         draws = info['score'].relative.wdl(ply=info['depth']).draws
         losses = info['score'].relative.wdl(ply=info['depth']).losses
