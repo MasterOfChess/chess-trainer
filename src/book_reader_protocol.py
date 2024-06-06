@@ -200,15 +200,16 @@ class FromFenCommand(BaseCommand[BaseProtocol, EdgeResult]):
         processed_lines (int): The number of lines processed so far.
     """
 
-    def __init__(self, fen: str) -> None:
+    def __init__(self, filename: str, fen: str) -> None:
         super().__init__()
+        self.filename = filename
         self.fen = fen
         self.edge_result = EdgeResult(board=chess.Board(fen))
         self.expected_lines = None
         self.processed_lines = 0
 
     def start(self, protocol: BaseProtocol) -> None:
-        protocol.send_line(f'fromfen {self.fen}')
+        protocol.send_line(f'fromfen {self.filename} {self.fen}')
 
     def on_line(self, _: BaseProtocol, line: str) -> None:
         words = line.strip().split()
@@ -225,30 +226,6 @@ class FromFenCommand(BaseCommand[BaseProtocol, EdgeResult]):
             self.set_done(self.edge_result)
 
 
-class CloseBookCommand(BaseCommand[BaseProtocol, None]):
-
-    def start(self, protocol: BaseProtocol) -> None:
-        protocol.send_line('closebook')
-        self.set_done(None)
-
-    def on_line(self, _: BaseProtocol, line: str) -> None:
-        pass
-
-
-class OpenBookCommand(BaseCommand[BaseProtocol, None]):
-
-    def __init__(self, book_path: str) -> None:
-        super().__init__()
-        self.book_path = book_path
-
-    def start(self, protocol: BaseProtocol) -> None:
-        protocol.send_line(f'openbook {self.book_path}')
-        self.set_done(None)
-
-    def on_line(self, _: BaseProtocol, line: str) -> None:
-        pass
-
-
 class BookReader(BaseProtocol):
     """
     Wrapper around BaseProtocol to interact with book_reader.cc.
@@ -262,14 +239,8 @@ class BookReader(BaseProtocol):
         self.add_command(QuitCommand())
         return self.close()
 
-    def from_fen(self, fen: str):
-        return self.add_command(FromFenCommand(fen))
-
-    def open_book(self, book_path: str):
-        return self.add_command(OpenBookCommand(book_path))
-
-    def close_book(self):
-        return self.add_command(CloseBookCommand())
+    def from_fen(self, filename: str, fen: str):
+        return self.add_command(FromFenCommand(filename, fen))
 
 
 #######################################################
@@ -289,8 +260,8 @@ if __name__ == '__main__':
                 print(book_reader.quit())
                 break
             if message.startswith('fromfen'):
-                fen = message.split(None, 1)[1]
-                result = book_reader.from_fen(fen)
+                _, filename, fen = message.split(None, 2)[1]
+                result = book_reader.from_fen(filename, fen)
                 print('\n'.join(map(str, result.edges)))
                 continue
 

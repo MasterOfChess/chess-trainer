@@ -64,9 +64,13 @@ OPENINGS = initialize_openings()
 # freedom_degree: int [1, 6]
 # color: white | black
 # current_book: int
+# current_book_path: str
 # in_book: bool
 # initialized: bool
 # nickname: str
+# color_mode: dark | light
+# game: str
+# fen: str
 
 
 def get_current_game_state(
@@ -88,11 +92,10 @@ def update_game_state(board: chess.Board, game: chess.pgn.Game):
 
 
 def change_book(new_book):
-    book_reader.close_book()
     logger.debug('Opening book: %s.bin', new_book)
-    book_reader.open_book(os.path.join(BOOKS_DIR, new_book + '.bin'))
     book_idx = [o.book for o in OPENINGS].index(new_book)
     session['current_book'] = book_idx
+    session['current_book_path'] = os.path.join(BOOKS_DIR, new_book + '.bin')
 
 
 def initialize_config():
@@ -100,6 +103,8 @@ def initialize_config():
         session.permanent = True
         session['initialized'] = True
         session['current_book'] = 0
+        session['current_book_path'] = os.path.join(BOOKS_DIR,
+                                                    OPENINGS[0].book + '.bin')
         session['color_mode'] = 'dark'
         session['nickname'] = 'Default Player'
         session['color'] = 'white'
@@ -164,7 +169,8 @@ def choose_engine_move(board: chess.Board):
 def choose_move(board: chess.Board):
     if not session['in_book']:
         return choose_engine_move(board)
-    edge_result = book_reader.from_fen(board.fen())
+    edge_result = book_reader.from_fen(session['current_book_path'],
+                                       board.fen())
     if not edge_result.edges:
         return choose_engine_move(board)
     logger.info('\n'.join(map(str, edge_result.edges)))

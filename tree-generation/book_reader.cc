@@ -11,22 +11,18 @@
  * 4 byte number of apperances of the move in that position
  *
  * Arguments:
- * book filename
  *
  * Handles the following commands:
- * 1. fromfen <fen>
+ * 1. fromfen bookname <fen>
  *    Responds with the number of moves from the position and the moves
  *    sorted by the number of appearances in the book.
- * 2. closebook
- *    Closes the current book.
- * 3. openbook <filename>
- *    Opens a new book file.
- * 4. exit
- * 5. quit
+ * 2. exit
+ * 3. quit
  */
 #include "./chess-library/include/chess.hpp"
 #include <fstream>
 #include <iomanip>
+#include <map>
 #include <queue>
 #include <random>
 #include <set>
@@ -61,10 +57,23 @@ struct Edge {
   uint32_t count;
 };
 
-static vector<BookEntry> book;
+// static vector<BookEntry> book;
 static queue<Command> command_queue;
 
-static void ReadBook(const string &filename) {
+const long long TOTAL_BUFFER_SIZE_ALLOWED = 1 << 24;
+static long long total_buffer_size = 0;
+std::vector<std::vector<BookEntry>> book_buffers;
+static long long time_point = 0;
+
+struct Book {
+  std::string filename;
+  long long last_accessed;
+  int buffer_idx;
+};
+
+std::map<std::string, Book> name_to_book;
+
+static void ReadBook(const string &filename, vector<BookEntry> *book) {
   std::ifstream in(filename, std::ios::binary);
   if (!in) {
     cerr << "Cannot open file " << filename << std::endl;
@@ -72,8 +81,50 @@ static void ReadBook(const string &filename) {
   }
   BookEntry entry;
   while (in.read(reinterpret_cast<char *>(&entry), sizeof(entry))) {
-    book.push_back(entry);
+    book->push_back(entry);
   }
+}
+
+static int ApplyLRU() {
+  int min_time = time_point;
+  std::string min_name;
+  for (const auto &entry : name_to_book) {
+    if (entry.second.last_accessed < min_time) {
+      min_time = entry.second.last_accessed;
+      min_name = entry.first;
+    }
+  }
+  int buffer_idx = name_to_book[min_name].buffer_idx;
+  total_buffer_size -= book_buffers[buffer_idx].size();
+  book_buffers[buffer_idx].clear();
+  name_to_book.erase(min_name);
+  for (auto &entry : name_to_book) {
+    if (entry.second.buffer_idx + 1 == (int)book_buffers.size()) {
+      entry.second.buffer_idx = buffer_idx;
+      std::swap(book_buffers[buffer_idx], book_buffers.back());
+      book_buffers.pop_back();
+      break;
+    }
+  }
+  return buffer_idx;
+}
+
+static std::vector<BookEntry> &GetBookBuffer(const std::string &filename) {
+  if (name_to_book.find(filename) == name_to_book.end()) {
+    name_to_book[filename] = Book{filename, time_point, -1};
+  }
+  time_point++;
+  name_to_book[filename].last_accessed = time_point;
+  if (name_to_book[filename].buffer_idx == -1) {
+    name_to_book[filename].buffer_idx = book_buffers.size();
+    book_buffers.push_back({});
+    ReadBook(filename, &book_buffers.back());
+    total_buffer_size += book_buffers.back().size();
+    if (total_buffer_size > TOTAL_BUFFER_SIZE_ALLOWED) {
+      ApplyLRU();
+    }
+  }
+  return book_buffers[name_to_book[filename].buffer_idx];
 }
 
 static void ParseCommand(const string &line) {
@@ -87,9 +138,10 @@ static void ParseCommand(const string &line) {
   command_queue.push(command);
 }
 
-static vector<Edge> FindEdgesFromPosition(const Board &board,
+static vector<Edge> FindEdgesFromPosition(const std::string &bookname,
                                           uint64_t pos_hash) {
   vector<Edge> edges;
+  auto &book = GetBookBuffer(bookname);
   auto it = std::lower_bound(
       book.begin(), book.end(), pos_hash,
       [](const BookEntry &entry, uint64_t hash) { return entry.hash < hash; });
@@ -124,41 +176,15 @@ static void ExecuteExitCommand(const Command &command) {
   }
 }
 
-static void ExecutePositionFromSeqCommand(const Command &command) {
-  if (command.name == "positionfromseq") {
-    if (command.args.empty()) {
-      cerr << "Usage: positionfromseq <number of halfmoves> <sequence of "
-              "moves>\n";
-      return;
-    }
-    int halfmoves = std::stoi(command.args[0]);
-    if ((int)command.args.size() < halfmoves + 1) {
-      cerr << "Usage: positionfromseq <number of halfmoves> <sequence of "
-              "moves>\n";
-      return;
-    }
-    Board board;
-    for (int i = 1; i <= halfmoves; i++) {
-      board.makeMove(uci::uciToMove(board, command.args[i]));
-    }
-    uint64_t pos_hash = board.hash();
-    vector<Edge> edges = FindEdgesFromPosition(board, pos_hash);
-    cout << "positionmoves " << edges.size() << '\n';
-    for (const Edge &edge : edges) {
-      cout << edge.move << " " << edge.count << '\n';
-    }
-    cout.flush();
-  }
-}
-
 static void ExecuteFromFenCommand(const Command &command) {
   if (command.name == "fromfen") {
-    if (command.args.empty() || command.args.size() != 6) {
+    if (command.args.empty() || command.args.size() != 7) {
       cerr << "Usage: fromfen <fen>\n";
       return;
     }
+    const std::string &bookname = command.args[0];
     std::string fen;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 1; i < 7; i++) {
       fen += command.args[i];
       if (i != 5) {
         fen += " ";
@@ -166,7 +192,7 @@ static void ExecuteFromFenCommand(const Command &command) {
     }
     Board board(fen);
     uint64_t pos_hash = board.hash();
-    vector<Edge> edges = FindEdgesFromPosition(board, pos_hash);
+    vector<Edge> edges = FindEdgesFromPosition(bookname, pos_hash);
     cout << "positionmoves " << edges.size() << '\n';
     for (const Edge &edge : edges) {
       cout << edge.move << " " << edge.count << '\n';
@@ -175,41 +201,16 @@ static void ExecuteFromFenCommand(const Command &command) {
   }
 }
 
-static void ExecuteCloseBookCommand(const Command &command) {
-  if (command.name == "closebook") {
-    book.clear();
-  }
-}
-
-static void ExecuteOpenBookCommand(const Command &command) {
-  if (command.name == "openbook") {
-    if (command.args.empty()) {
-      cerr << "Usage: openbook <filename>\n";
-      return;
-    }
-    if (!book.empty()) {
-      cerr << "Close the current book before opening a new one.\n";
-      return;
-    }
-    ReadBook(command.args[0]);
-  }
-}
-
 static void ExecuteCommand(const Command &command) {
   ExecuteQuitCommand(command);
   ExecuteExitCommand(command);
-  ExecutePositionFromSeqCommand(command);
   ExecuteFromFenCommand(command);
-  ExecuteCloseBookCommand(command);
-  ExecuteOpenBookCommand(command);
 }
 
-int main(int argc, char *argv[]) {
+int main() {
   std::ios_base::sync_with_stdio(false);
   std::cin.tie(nullptr);
-  if (argc == 2) {
-    ReadBook(argv[1]);
-  }
+
   while (true) {
     string line;
     std::getline(cin, line);
