@@ -3,6 +3,7 @@ var game = new Chess();
 var $status = $("#status");
 const whiteSquarePink = '#FFB6C1';
 const blackSquarePink = '#FF69B4';
+const moveDelay = 300; // allows better experience
 var promotion_running = false;
 
 /* **************************************
@@ -153,7 +154,7 @@ async function askEngineToPlayMove(move_san) {
         game.load(data.fen);
         board.position(game.fen());
         resolve();
-      }, 300);
+      }, moveDelay);
     });
   });
 }
@@ -220,8 +221,6 @@ async function updatePGNCard() {
       $('#pgn').html(data.pgn);
       $('#eval-bar-bot').attr('height', data.score + '%');
       $('#eval-bar-top').attr('height', (100 - data.score) + '%');
-      // game.loadPgn(data.pgn);
-      // board.position(game.fen(), false);
       resolve();
     });
   });
@@ -229,35 +228,6 @@ async function updatePGNCard() {
 
 function updateStatus() {
   console.log("Updating status");
-  // var status = "";
-
-  // var moveColor = "White";
-  // if (game.turn() === "b") {
-  //   moveColor = "Black";
-  // }
-  // console.log("Move color: " + moveColor);
-
-  // // checkmate?
-  // if (game.in_checkmate()) {
-  //   status = "Game over, " + moveColor + " is in checkmate.";
-  // }
-
-  // // draw?
-  // else if (game.in_draw()) {
-  //   status = "Game over, drawn position";
-  // }
-
-  // // game still on
-  // else {
-  //   status = moveColor + " to move";
-
-  //   // check?
-  //   if (game.in_check()) {
-  //     status += ", " + moveColor + " is in check";
-  //   }
-  // }
-
-  // $status.html(status);
   updatePGNCard();
   updatePlayerCardBorder();
   return true;

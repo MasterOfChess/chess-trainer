@@ -11,6 +11,7 @@ import glob
 import argparse
 import io
 import logging
+import math
 
 logging.basicConfig(
     format='%(asctime)s:%(threadName)s: %(filename)s:%(lineno)d %(message)s',
@@ -150,7 +151,7 @@ def choose_move(board: chess.Board):
     edge_result = book_reader.from_fen(board.fen())
     if not edge_result.edges:
         return choose_engine_move(board)
-    logger.debug('\n'.join(map(str, edge_result.edges)))
+    logger.info('\n'.join(map(str, edge_result.edges)))
     available_edges = edge_result.edges[:session['freedom_degree']]
     edge = random.choice(available_edges)
     board.push(edge.move)
@@ -215,7 +216,7 @@ def query_game_state():
     logger.debug('Current state: %s', str(current_game.mainline_moves()))
     if not current_board.is_game_over():
         info = analyse_engine.analyse(current_board,
-                                      chess.engine.Limit(time=0.1))
+                                      chess.engine.Limit(time=0.4))
         wins = info['score'].relative.wdl(ply=info['depth']).wins
         draws = info['score'].relative.wdl(ply=info['depth']).draws
         losses = info['score'].relative.wdl(ply=info['depth']).losses
@@ -226,6 +227,10 @@ def query_game_state():
                                             info['score'].turn):
             wins, losses = losses, wins
         score = (wins + 0.5 * draws) / (wins + losses + draws)
+
+        def sigmoid(x):
+            return 1 / (1 + math.exp(-8 * (x - 0.5)))
+        score = sigmoid(score)
     else:
         if current_board.result() == '1-0' and session['color'] == 'white':
             score = 1
