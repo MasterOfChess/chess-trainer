@@ -146,10 +146,17 @@ function pieceColor(piece) {
   return piece.search(/^w/) !== -1 ? 'w' : 'b';
 }
 
+function moveToUCI(move) {
+  if (move.promotion) {
+    return move.from + move.to + move.promotion;
+  }
+  return move.from + move.to;
 
-async function askEngineToPlayMove(move_san) {
+}
+
+async function askEngineToPlayMove(move_uci) {
   await new Promise((resolve) => {
-    $.post("/make_move", { fen: game.fen(), move_san: move_san }, function (data) {
+    $.post("/make_move", { fen: game.fen(), move_uci: move_uci }, function (data) {
       setTimeout(() => {
         game.load(data.fen);
         board.position(game.fen());
@@ -179,7 +186,7 @@ function onDrop(source, target, piece) {
     board.position(game.fen());
     updateStatus();
 
-    await askEngineToPlayMove(move.san);
+    await askEngineToPlayMove(moveToUCI(move));
     updateStatus();
   }
   handleMove();

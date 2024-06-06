@@ -14,10 +14,15 @@
  * book filename
  *
  * Handles the following commands:
- * 1. positionfromseq <number of halfmoves> <sequence of moves>
+ * 1. fromfen <fen>
  *    Responds with the number of moves from the position and the moves
  *    sorted by the number of appearances in the book.
- * 2. exit
+ * 2. closebook
+ *    Closes the current book.
+ * 3. openbook <filename>
+ *    Opens a new book file.
+ * 4. exit
+ * 5. quit
  */
 #include "./chess-library/include/chess.hpp"
 #include <fstream>
@@ -63,7 +68,7 @@ static void ReadBook(const string &filename) {
   std::ifstream in(filename, std::ios::binary);
   if (!in) {
     cerr << "Cannot open file " << filename << std::endl;
-    exit(1);
+    return;
   }
   BookEntry entry;
   while (in.read(reinterpret_cast<char *>(&entry), sizeof(entry))) {
@@ -170,21 +175,41 @@ static void ExecuteFromFenCommand(const Command &command) {
   }
 }
 
+static void ExecuteCloseBookCommand(const Command &command) {
+  if (command.name == "closebook") {
+    book.clear();
+  }
+}
+
+static void ExecuteOpenBookCommand(const Command &command) {
+  if (command.name == "openbook") {
+    if (command.args.empty()) {
+      cerr << "Usage: openbook <filename>\n";
+      return;
+    }
+    if (!book.empty()) {
+      cerr << "Close the current book before opening a new one.\n";
+      return;
+    }
+    ReadBook(command.args[0]);
+  }
+}
+
 static void ExecuteCommand(const Command &command) {
   ExecuteQuitCommand(command);
   ExecuteExitCommand(command);
   ExecutePositionFromSeqCommand(command);
   ExecuteFromFenCommand(command);
+  ExecuteCloseBookCommand(command);
+  ExecuteOpenBookCommand(command);
 }
 
 int main(int argc, char *argv[]) {
   std::ios_base::sync_with_stdio(false);
   std::cin.tie(nullptr);
-  if (argc < 2) {
-    cerr << "Usage: " << argv[0] << " <input file>\n";
-    return 1;
+  if (argc == 2) {
+    ReadBook(argv[1]);
   }
-  ReadBook(argv[1]);
   while (true) {
     string line;
     std::getline(cin, line);

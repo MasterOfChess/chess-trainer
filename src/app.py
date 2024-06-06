@@ -20,30 +20,27 @@ logging.basicConfig(
     datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
 
-# big_book - 1 934 385 games
-# semi_slav - 141 640 games
-
 # create web app instance
 app = Flask(__name__)
 
 app.secret_key = 'KEY_EASY_TO_HACK'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=10)
+
+# Paths
 BOOK_READER_PATH = os.path.join('static', 'book_reader')
 STOCKFISH_PATH = glob.glob(os.path.join('static', 'stockfish', 'stockfish*'))[0]
 BOOKS_DIR = os.path.join('static', 'books')
-BOOKS = ['tree', 'big_book', 'semi_slav']
 
+# Engine settings
 ENGINE_THINKING_TIME = 0.5
 
+# Background jobs
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 analyse_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-book_reader = None
-current_board = chess.Board()
-current_game = chess.pgn.Game()
-current_node = None
-openings_initialized = False
+book_reader = BookReader.popen(BOOK_READER_PATH)
 
 
+# Openings config
 @dataclasses.dataclass
 class Opening:
     book: str
@@ -54,14 +51,13 @@ class Opening:
     description: str = ''
 
 
-# OPENINGS = [
-#     Opening('tree', 'Bot Small Book'),
-#     Opening('big_book', 'Bot Big Book'),
-#     Opening('semi_slav', 'Bot Semi Slav'),
-#     Opening('accelerated_dragon', 'Bot Accelerated Dragon', img='images/dragon_sicilian_icon.png')
-# ]
+def initialize_openings() -> list[Opening]:
+    with open('static/books/config.json', encoding='utf-8') as f:
+        config = json.load(f)
+        return list(map(lambda opening: Opening(**opening), config))
 
-OPENINGS = []
+
+OPENINGS = initialize_openings()
 
 # Session fields
 # bot_lvl: int [1, 20]
@@ -73,31 +69,33 @@ OPENINGS = []
 # nickname: str
 
 
-def initialize_openings():
-    with open('static/books/config.json', encoding='utf-8') as f:
-        config = json.load(f)
-        for opening in config:
-            OPENINGS.append(Opening(**opening))
-    logger.debug('Openings initialized: %s',
-                 str(list(map(lambda x: x.book, OPENINGS))))
-    global openings_initialized
-    openings_initialized = True
+def get_current_game_state(
+) -> tuple[chess.Board, chess.pgn.Game, chess.pgn.ChildNode]:
+    board = chess.Board()
+    game = chess.pgn.Game()
+    if 'game' in session:
+        game = chess.pgn.read_game(io.StringIO(session['game']))
+        node = game
+        for move in game.mainline_moves():
+            board.push(move)
+            node = node.next()
+    return board, game, node
+
+
+def update_game_state(board: chess.Board, game: chess.pgn.Game):
+    session['game'] = game.accept(chess.pgn.StringExporter())
+    session['fen'] = board.fen()
 
 
 def change_book(new_book):
-    # if OPENINGS[session['current_book']].book != new_book:
-    global book_reader
-    book_reader.quit()
+    book_reader.close_book()
     logger.debug('Opening book: %s.bin', new_book)
-    book_reader = BookReader.popen(BOOK_READER_PATH,
-                                   os.path.join(BOOKS_DIR, new_book + '.bin'))
+    book_reader.open_book(os.path.join(BOOKS_DIR, new_book + '.bin'))
     book_idx = [o.book for o in OPENINGS].index(new_book)
     session['current_book'] = book_idx
 
 
 def initialize_config():
-    if not openings_initialized:
-        initialize_openings()
     if 'initialized' not in session:
         session.permanent = True
         session['initialized'] = True
@@ -105,24 +103,14 @@ def initialize_config():
         session['color_mode'] = 'dark'
         session['nickname'] = 'Default Player'
         session['color'] = 'white'
-    global book_reader
-    if book_reader is None:
-        book_reader = BookReader.popen(
-            BOOK_READER_PATH,
-            os.path.join(BOOKS_DIR,
-                         OPENINGS[session['current_book']].book + '.bin'))
 
 
 def init_new_game():
-    global current_board
-    global current_game
-    global current_node
     session['in_book'] = True
     session['freedom_degree'] = 3
     session['bot_lvl'] = 10
     current_board = chess.Board()
     current_game = chess.pgn.Game()
-    current_node = None
     current_game.headers['Event'] = 'Chess Opening Trainer training'
     current_game.headers.pop('Site')
     current_game.headers.pop('Round')
@@ -133,6 +121,7 @@ def init_new_game():
         current_game.headers['White'] = session['nickname']
         current_game.headers['Black'] = OPENINGS[session['current_book']].name
     current_game.headers['Date'] = datetime.datetime.now().strftime('%Y-%m-%d')
+    update_game_state(current_board, current_game)
     engine.configure({'Skill Level': session['bot_lvl']})
 
 
@@ -195,28 +184,22 @@ def render_template_with_session(file: str, *args, **kwargs):
         **kwargs)
 
 
-def update_current_node():
-    global current_node
-    if current_node is None:
-        current_node = current_game.add_variation(current_board.peek())
-    else:
-        current_node = current_node.add_variation(current_board.peek())
-
-
 @app.route('/make_move', methods=['POST'])
 def make_move():
     fen = request.form.get('fen')
-    move_san = request.form.get('move_san')
-    if move_san != 'None':
-        current_board.push_san(move_san)
-        update_current_node()
+    move_uci = request.form.get('move_uci')
+    current_board, current_game, current_node = get_current_game_state()
+    if move_uci != 'None':
+        current_board.push(chess.Move.from_uci(move_uci))
+        current_node = current_node.add_variation(current_board.peek())
     # board = chess.Board(fen)
     if current_board.is_game_over():
         current_game.headers['Result'] = current_board.result()
+        update_game_state(current_board, current_game)
         return {'fen': current_board.fen()}
     fen = choose_move(current_board)
-    update_current_node()
-
+    current_node = current_node.add_variation(current_board.peek())
+    update_game_state(current_board, current_game)
     return {'fen': fen}
 
 
@@ -229,17 +212,20 @@ def toggle_color_mode():
 
 @app.route('/change_nickname', methods=['POST'])
 def change_nickname():
+    current_board, current_game, _ = get_current_game_state()
     nickname = request.form.get('nickname')
     session['nickname'] = nickname
     if session['color'] == 'white':
         current_game.headers['White'] = nickname
     else:
         current_game.headers['Black'] = nickname
+    update_game_state(current_board, current_game)
     return {}
 
 
 @app.route('/query_game_state', methods=['POST'])
 def query_game_state():
+    current_board, current_game, _ = get_current_game_state()
     logger.debug('Current state: %s', str(current_game.mainline_moves()))
     if not current_board.is_game_over():
         info = analyse_engine.analyse(current_board,
@@ -281,7 +267,7 @@ def query_game_state():
 
 @app.route('/download_pgn')
 def download_pgn():
-    pgn = current_game.accept(chess.pgn.StringExporter())
+    pgn = session['game']
     return send_file(io.BytesIO(pgn.encode()), download_name='game.pgn')
 
 
@@ -298,8 +284,6 @@ def root():
 @app.route('/choose_opening', methods=['GET'])
 def choose_opening():
     initialize_config()
-    if not openings_initialized:
-        initialize_openings()
     return render_template_with_session('choose_opening.html',
                                         openings_list=OPENINGS)
 

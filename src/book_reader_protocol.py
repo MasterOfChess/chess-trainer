@@ -225,7 +225,34 @@ class FromFenCommand(BaseCommand[BaseProtocol, EdgeResult]):
             self.set_done(self.edge_result)
 
 
+class CloseBookCommand(BaseCommand[BaseProtocol, None]):
+
+    def start(self, protocol: BaseProtocol) -> None:
+        protocol.send_line('closebook')
+        self.set_done(None)
+
+    def on_line(self, _: BaseProtocol, line: str) -> None:
+        pass
+
+
+class OpenBookCommand(BaseCommand[BaseProtocol, None]):
+
+    def __init__(self, book_path: str) -> None:
+        super().__init__()
+        self.book_path = book_path
+
+    def start(self, protocol: BaseProtocol) -> None:
+        protocol.send_line(f'openbook {self.book_path}')
+        self.set_done(None)
+
+    def on_line(self, _: BaseProtocol, line: str) -> None:
+        pass
+
+
 class BookReader(BaseProtocol):
+    """
+    Wrapper around BaseProtocol to interact with book_reader.cc.
+    """
 
     def exit(self) -> int:
         self.add_command(ExitCommand())
@@ -237,6 +264,12 @@ class BookReader(BaseProtocol):
 
     def from_fen(self, fen: str):
         return self.add_command(FromFenCommand(fen))
+
+    def open_book(self, book_path: str):
+        return self.add_command(OpenBookCommand(book_path))
+
+    def close_book(self):
+        return self.add_command(CloseBookCommand())
 
 
 #######################################################
