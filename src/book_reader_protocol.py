@@ -27,7 +27,7 @@ import chess
 import dataclasses
 
 logging.basicConfig(format='%(asctime)s:%(threadName)s:%(message)s',
-                    level=logging.DEBUG,
+                    level=logging.INFO,
                     datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 

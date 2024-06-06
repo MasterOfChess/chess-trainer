@@ -15,7 +15,7 @@ import math
 
 logging.basicConfig(
     format='%(asctime)s:%(threadName)s: %(filename)s:%(lineno)d %(message)s',
-    level=logging.DEBUG,
+    level=logging.INFO,
     datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,7 @@ ENGINE_THINKING_TIME = 0.5
 
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 analyse_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-book_reader = BookReader.popen(BOOK_READER_PATH,
-                               os.path.join(BOOKS_DIR, 'tree.bin'))
+book_reader = None
 current_board = chess.Board()
 current_game = chess.pgn.Game()
 current_node = None
@@ -46,13 +45,17 @@ current_node = None
 @dataclasses.dataclass
 class Opening:
     book: str
-    text: str
+    name: str
+    games: int = 0
+    moves: int = 0
+    description: str = ''
 
 
 OPENINGS = [
     Opening('tree', 'Bot Small Book'),
     Opening('big_book', 'Bot Big Book'),
-    Opening('semi_slav', 'Bot Semi Slav')
+    Opening('semi_slav', 'Bot Semi Slav'),
+    Opening('accelerated_dragon', 'Bot Accelerated Dragon')
 ]
 
 # Session fields
@@ -84,6 +87,12 @@ def initialize_config():
         session['color_mode'] = 'dark'
         session['nickname'] = 'Default Player'
         session['color'] = 'white'
+    global book_reader
+    if book_reader is None:
+        book_reader = BookReader.popen(
+            BOOK_READER_PATH,
+            os.path.join(BOOKS_DIR,
+                         OPENINGS[session['current_book']].book + '.bin'))
 
 
 def init_new_game():
@@ -101,10 +110,10 @@ def init_new_game():
     current_game.headers.pop('Round')
     if session['color'] == 'black':
         current_game.headers['Black'] = session['nickname']
-        current_game.headers['White'] = OPENINGS[session['current_book']].text
+        current_game.headers['White'] = OPENINGS[session['current_book']].name
     else:
         current_game.headers['White'] = session['nickname']
-        current_game.headers['Black'] = OPENINGS[session['current_book']].text
+        current_game.headers['Black'] = OPENINGS[session['current_book']].name
     current_game.headers['Date'] = datetime.datetime.now().strftime('%Y-%m-%d')
     engine.configure({'Skill Level': session['bot_lvl']})
 
@@ -163,7 +172,7 @@ def render_template_with_session(file: str, *args, **kwargs):
         file,
         color_mode=session['color_mode'],
         current_nickname=session['nickname'],
-        current_opponent=OPENINGS[session['current_book']].text,
+        current_opponent=OPENINGS[session['current_book']].name,
         *args,
         **kwargs)
 
@@ -230,6 +239,7 @@ def query_game_state():
 
         def sigmoid(x):
             return 1 / (1 + math.exp(-8 * (x - 0.5)))
+
         score = sigmoid(score)
     else:
         if current_board.result() == '1-0' and session['color'] == 'white':

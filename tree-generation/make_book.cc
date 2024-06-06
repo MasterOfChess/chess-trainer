@@ -14,13 +14,15 @@
  * Arguments:
  *  book filename
  *  number of games in the input pgn file
- *  probability of accepting the game (1/p)
- *  random generator seed
+ *  expected number of accepted games
  *  max depth of the book tree in halfmoves
+ *  first eco code in accepted interval
+ *  last eco code in accepted interval
+ *  random generator seed
  *
  * Example usage:
  *  zstdcat ../data/lichess_db_standard_rated_2024-04.pgn.zst | \
- *  ./make_book semi_slav.bin 91383489 1000 30 D43 D49 73632
+ *  ./make_book semi_slav 91383489 100000 30 D43 D49 73632
  */
 #include "./chess-library/include/chess.hpp"
 #include <chrono>
@@ -60,7 +62,7 @@ public:
     processed_games++;
     PrintProgress();
   }
-  void startMoves() { accepted_games++; }
+  void startMoves(int ac) { accepted_games = ac; }
 
 private:
   const int NUMBER_OF_GAMES;
@@ -97,25 +99,6 @@ private:
       cout.flush();
     }
   }
-};
-
-/*
- * Visitor that filters games based on the given probability.
- * Accepts every game with probability 1/p.
- * s - random generator seed
- * p - inverse of the probability of accepting the game
- */
-class ProbabilityFilter {
-public:
-  ProbabilityFilter(int s, int p) : gen(s), distribution(0, p - 1) {}
-
-  void startPgn() { skip = distribution(gen) != 0; }
-  bool shouldSkip() { return skip; }
-
-private:
-  std::mt19937 gen;
-  std::uniform_int_distribution<int> distribution;
-  bool skip = false;
 };
 
 class HeaderFilter {
@@ -160,23 +143,57 @@ private:
   bool abandoned = false;
 };
 
+struct DumpInfo {
+  int n_accepted_games;
+  int n_edges;
+};
+
 class BookCreator {
 public:
-  BookCreator(const string &filename) : file(filename, std::ios::binary) {
+  BookCreator(const string &filename, int expected_size, int seed)
+      : file(filename, std::ios::binary), ACCEPTED_LIMIT(expected_size),
+        gen(seed), distribution(0, expected_size - 1), real_coin(0, 1) {
     if (!file.is_open()) {
       cerr << "Cannot open file " + std::string(filename) << std::endl;
       exit(1);
     }
   }
+
+  int acceptedGames() const { return (int)games.size(); }
+
+  bool shouldSkip() {
+    game_count++;
+    if ((int)games.size() < ACCEPTED_LIMIT) {
+      games.push_back(Game{});
+      return false;
+    }
+    if (real_coin(gen) > ACCEPTED_LIMIT / (double)game_count) {
+      return true;
+    }
+    int index = distribution(gen);
+    std::swap(games[index], games.back());
+    games.back().game_moves.clear();
+    return false;
+  }
+
   void startMoves() {
     board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
   }
+
   void move(std::string_view move, std::string_view comment) {
     chess::Move move_repr = uci::parseSan(board, move);
     registerMove(move_repr);
     board.makeMove(move_repr);
   }
-  void dumpBook() {
+
+  DumpInfo dumpBook() {
+    std::vector<Entry> entries;
+    for (const auto &game : games) {
+      for (const auto &entry : game.game_moves) {
+        entries.push_back(entry);
+      }
+    }
+    DumpInfo info{(int)games.size(), (int)entries.size()};
     std::sort(
         entries.begin(), entries.end(), [](const Entry &a, const Entry &b) {
           if (a.zobrist == b.zobrist && a.source_square == b.source_square) {
@@ -199,6 +216,7 @@ public:
     }
     file.flush();
     entries.clear();
+    return info;
   }
 
 private:
@@ -211,7 +229,15 @@ private:
     bool promotion;
     chess::PieceType promotion_piece;
   };
-  std::vector<Entry> entries;
+  struct Game {
+    std::vector<Entry> game_moves;
+  };
+  std::vector<Game> games;
+  const int ACCEPTED_LIMIT;
+  std::mt19937 gen;
+  std::uniform_int_distribution<int> distribution;
+  std::uniform_real_distribution<double> real_coin;
+  int game_count{0};
 
   void registerMove(chess::Move move) {
     Entry entry;
@@ -222,7 +248,7 @@ private:
       entry = Entry{board.hash(), move.from(), move.to(), false,
                     chess::PieceType::PAWN};
     }
-    entries.push_back(entry);
+    games.back().game_moves.push_back(entry);
   }
 
   void writeMove(const Entry &entry, int count) {
@@ -274,29 +300,31 @@ private:
 
 class BookVisitor : public pgn::Visitor {
 public:
-  explicit BookVisitor(int n_games, int seed, int probability,
+  explicit BookVisitor(int n_games, int seed, int expected_size,
                        const string &filename, int max_depth,
                        const vector<string> &valid_codes)
       : header_filter(std::make_unique<HeaderFilter>()),
-        probability_filter(
-            std::make_unique<ProbabilityFilter>(seed, probability)),
         progress_printer(std::make_unique<ProgressPrinter>(n_games)),
-        book_creator(std::make_unique<BookCreator>(filename)),
+        book_creator(
+            std::make_unique<BookCreator>(filename, expected_size, seed)),
         depth_filter(std::make_unique<DepthFilter>(max_depth)),
         eco_filter(std::make_unique<EcoFilter>(valid_codes)) {}
   void startPgn() {
     header_filter->startPgn();
-    probability_filter->startPgn();
     progress_printer->startPgn();
     eco_filter->startPgn();
   }
   void startMoves() {
-    if (header_filter->shouldSkip() || eco_filter->shouldSkip() ||
-        probability_filter->shouldSkip()) {
+    if (header_filter->shouldSkip() || eco_filter->shouldSkip()) {
       skipPgn(true);
       return;
     }
-    progress_printer->startMoves();
+    // Important that this is the last filter called
+    if (book_creator->shouldSkip()) {
+      skipPgn(true);
+      return;
+    }
+    progress_printer->startMoves(book_creator->acceptedGames());
     book_creator->startMoves();
     depth_filter->startMoves();
   }
@@ -312,11 +340,10 @@ public:
     book_creator->move(move, comment);
   }
   void endPgn() {}
-  void dumpBook() { book_creator->dumpBook(); }
+  DumpInfo dumpBook() { return book_creator->dumpBook(); }
 
 private:
   std::unique_ptr<HeaderFilter> header_filter;
-  std::unique_ptr<ProbabilityFilter> probability_filter;
   std::unique_ptr<ProgressPrinter> progress_printer;
   std::unique_ptr<BookCreator> book_creator;
   std::unique_ptr<DepthFilter> depth_filter;
@@ -347,22 +374,30 @@ int main(int argc, char *argv[]) {
   std::cin.tie(nullptr);
   if (argc < 8) {
     cerr << "Usage: " << argv[0]
-         << " <output file> <n_games> <probability> <max_depth> "
+         << " <output file> <n_games> <n_accepted_games> <max_depth> "
             "<start_eco_code> <end_eco_code> <seed>\n";
     return 1;
   }
   std::string filename = argv[1];
   int n_games = std::stoi(argv[2]);
-  int probability = std::stoi(argv[3]);
+  int n_accepted_games = std::stoi(argv[3]);
   int max_depth = std::stoi(argv[4]);
   string start_eco_code = argv[5];
   string end_eco_code = argv[6];
   int seed = std::stoi(argv[7]);
   vector<string> valid_codes = genEcoCodes(start_eco_code, end_eco_code);
-  auto vis = std::make_unique<BookVisitor>(n_games, seed, probability, filename,
-                                           max_depth, valid_codes);
+  auto vis =
+      std::make_unique<BookVisitor>(n_games, seed, n_accepted_games,
+                                    filename + ".bin", max_depth, valid_codes);
 
   pgn::StreamParser parser(std::cin);
   parser.readGames(*vis);
-  vis->dumpBook();
+  const auto dump_info = vis->dumpBook();
+  std::ofstream ofs(filename + ".txt");
+  ofs << "Games: " << dump_info.n_accepted_games << '\n'
+      << "Moves: " << dump_info.n_edges << '\n';
+  ofs.flush();
+  ofs.close();
+  cout << "\nDumped " << dump_info.n_edges << " edges from "
+       << dump_info.n_accepted_games << " games" << std::endl;
 }
