@@ -1,17 +1,42 @@
-{% extends "layout.html" %}
-{% block title %}Choose Opening{% endblock %}
-{%block head %} {{super()}} {% endblock %}
-{% block body %}
-{{super()}}
+{% from "macros.html" import nice_number with context %}
+{% extends "layout.html" %} {% block title %}Choose Opening{% endblock %}
+{%block head %} {{super()}}
+<link
+  rel="stylesheet"
+  href="{{url_for('static', filename='css/choose_opening.css')}}"
+  type="text/css"
+/>
+{% endblock %} {% block body %} {{super()}}
 <div class="container">
   <div class="row align-items-center" style="margin-top: 20px">
     <h1>Choose an opening</h1>
     <ul>
       {% for opening in openings_list %}
-      <li>
-        <a href="{{ url_for('openings', name=opening.book) }}"
-          >{{ opening.text }}</a
-        >
+      <li
+        class="card mb-4 mt-4 text-light flex-row"
+        style="background: var(--bg-card-gradient); width: 85%;"
+      >
+        {% if opening.img is not none %}
+        <div class="ratio ratio-1x1 w-25">
+          <img
+            src="{{ url_for('static', filename=opening.img) }}"
+            class="card-img-left"
+            alt="{{opening.img}}"
+          />
+        </div>
+        {% endif %}
+        <div class="card-header w-25">
+          <h3>{{opening.name}}</h3>
+        </div>
+        <div class="card-body w-50">
+          <p class="card-text">{{opening.description}} <strong>The bot is based
+            on over {{nice_number(opening.moves)}} moves chosen from {{nice_number(opening.games)}} master games!</strong></p>
+          <a
+            href="{{ url_for('openings', name=opening.book) }}"
+            class="btn btn-outline-light float-right"
+            >Play against the bot</a
+          >
+        </div>
       </li>
       {% endfor %}
     </ul>

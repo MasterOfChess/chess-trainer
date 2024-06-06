@@ -12,6 +12,7 @@ import argparse
 import io
 import logging
 import math
+import json
 
 logging.basicConfig(
     format='%(asctime)s:%(threadName)s: %(filename)s:%(lineno)d %(message)s',
@@ -40,6 +41,7 @@ book_reader = None
 current_board = chess.Board()
 current_game = chess.pgn.Game()
 current_node = None
+openings_initialized = False
 
 
 @dataclasses.dataclass
@@ -48,15 +50,18 @@ class Opening:
     name: str
     games: int = 0
     moves: int = 0
+    img: str | None = None
     description: str = ''
 
 
-OPENINGS = [
-    Opening('tree', 'Bot Small Book'),
-    Opening('big_book', 'Bot Big Book'),
-    Opening('semi_slav', 'Bot Semi Slav'),
-    Opening('accelerated_dragon', 'Bot Accelerated Dragon')
-]
+# OPENINGS = [
+#     Opening('tree', 'Bot Small Book'),
+#     Opening('big_book', 'Bot Big Book'),
+#     Opening('semi_slav', 'Bot Semi Slav'),
+#     Opening('accelerated_dragon', 'Bot Accelerated Dragon', img='images/dragon_sicilian_icon.png')
+# ]
+
+OPENINGS = []
 
 # Session fields
 # bot_lvl: int [1, 20]
@@ -66,6 +71,17 @@ OPENINGS = [
 # in_book: bool
 # initialized: bool
 # nickname: str
+
+
+def initialize_openings():
+    with open('static/books/config.json', encoding='utf-8') as f:
+        config = json.load(f)
+        for opening in config:
+            OPENINGS.append(Opening(**opening))
+    logger.debug('Openings initialized: %s',
+                 str(list(map(lambda x: x.book, OPENINGS))))
+    global openings_initialized
+    openings_initialized = True
 
 
 def change_book(new_book):
@@ -80,6 +96,8 @@ def change_book(new_book):
 
 
 def initialize_config():
+    if not openings_initialized:
+        initialize_openings()
     if 'initialized' not in session:
         session.permanent = True
         session['initialized'] = True
@@ -280,6 +298,8 @@ def root():
 @app.route('/choose_opening', methods=['GET'])
 def choose_opening():
     initialize_config()
+    if not openings_initialized:
+        initialize_openings()
     return render_template_with_session('choose_opening.html',
                                         openings_list=OPENINGS)
 

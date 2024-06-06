@@ -19,3 +19,11 @@
   </div>
 </nav>
 {% endmacro %}
+
+{% macro nice_number(n) %}
+{% if n < 1000 %}
+n
+{% else %} 
+{{ '{} 000'.format(n // 1000) if n < 1000000 else '{:.1f} million'.format(n / 1000000) }}
+{% endif %}
+{% endmacro %}
