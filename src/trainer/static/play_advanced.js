@@ -15,7 +15,7 @@ var bot_lvl_form = document.getElementById("bot-lvl-form");
 bot_lvl_form.oninput = function () {
   let bot_lvl = this.value;
   $('label[for="bot-lvl-form"]').text("Bot lvl: " + bot_lvl);
-  $.post("/set_bot_lvl", { bot_lvl: bot_lvl }, function (data) {
+  $.post("set_bot_lvl", { bot_lvl: bot_lvl }, function (data) {
   });
 }
 
@@ -23,7 +23,7 @@ var freedom_degree_form = document.getElementById("freedom-degree-form");
 freedom_degree_form.oninput = function () {
   let freedom_degree = this.value;
   $('label[for="freedom-degree-form"]').text("Freedom degree: " + freedom_degree);
-  $.post("/set_freedom_degree", { freedom_degree: freedom_degree }, function (data) {
+  $.post("set_freedom_degree", { freedom_degree: freedom_degree }, function (data) {
   });
 }
 
@@ -155,8 +155,9 @@ function moveToUCI(move) {
 }
 
 async function askEngineToPlayMove(move_uci) {
+  console.log("Asking to play move: " + move_uci);
   await new Promise((resolve) => {
-    $.post("/make_move", { fen: game.fen(), move_uci: move_uci }, function (data) {
+    $.post("make_move", { fen: game.fen(), move_uci: move_uci }, function (data) {
       setTimeout(() => {
         game.load(data.fen);
         board.position(game.fen());
@@ -223,7 +224,7 @@ function updatePlayerCardBorder() {
 
 async function updatePGNCard() {
   await new Promise((resolve) => {
-    $.post('/query_game_state', {}, function (data) {
+    $.post('query_game_state', {}, function (data) {
       console.log(data.pgn);
       $('#pgn').html(data.pgn);
       $('#eval-bar-bot').attr('height', data.score + '%');

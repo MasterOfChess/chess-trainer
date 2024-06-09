@@ -34,7 +34,7 @@
       <div class="container-fluid">
         <a
           id="download-button"
-          href="{{url_for('download_pgn')}}"
+          href="{{url_for('index.play.download_pgn')}}"
           role="button"
           class="btn btn-lg btn-secondary mt-3 w-50"
           style="background: var(--bg-gradient)"
@@ -167,6 +167,6 @@
 <script
   type="text/javascript"
   language="javascript"
-  src="{{url_for('static', filename='play_bot.js')}}"
+  src="{{url_for('static', filename='play_advanced.js')}}"
 ></script>
 {% endblock %}
