@@ -18,9 +18,7 @@
     </ul>
   </div>
 </nav>
-{% endmacro %}
-
-{% macro play_button() %}
+{% endmacro %} {% macro play_button() %}
 <div class="container-fluid">
   <button
     id="play-button"
@@ -30,9 +28,7 @@
     Play
   </button>
 </div>
-{% endmacro %}
-
-{% macro eval_bar_radio() %}
+{% endmacro %} {% macro eval_bar_radio() %}
 <div class="container-fluid hstack p-2 justify-content-center">
   <input
     type="radio"
@@ -53,9 +49,7 @@
   />
   <label class="btn" for="eval-bar-off">Eval bar off</label>
 </div>
-{% endmacro %}
-
-{% macro board_column() %}
+{% endmacro %} {% macro board_column() %}
 <div class="col-5 align-items-center container-fluid h-100">
   <div class="row">
     <div class="col g-0">
@@ -106,8 +100,27 @@
         width="500"
         height="500"
         xmlns="http://www.w3.org/2000/svg"
-        style="opacity: 0.8; pointer-events: none"
-      ></svg>
+        style="opacity: 0.9; pointer-events: none"
+      >
+        <defs id="board-defs">
+          <pattern id="pat" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+            <image
+              x="9"
+              y="9"
+              width="48"
+              height="48"
+              href="{{url_for('static', filename='images/book-fill-yellow.svg')}}"
+            />
+            <image
+              x="12"
+              y="10"
+              width="44"
+              height="44"
+              href="{{url_for('static', filename='images/question.svg')}}"
+            />
+        </defs>
+        <!-- <rect x="62" y="62" width="62" height="62" fill="url(#pat)"></rect> -->
+      </svg>
       <div
         id="board"
         class="position-absolute top-0 start-0 z-0"
@@ -129,12 +142,6 @@
     </div>
   </div>
 </div>
-{% endmacro %}
-
-{% macro nice_number(n) %}
-{% if n < 1000 %}
-n
-{% else %} 
-{{ '{} 000'.format(n // 1000) if n < 1000000 else '{:.1f} million'.format(n / 1000000) }}
-{% endif %}
-{% endmacro %}
+{% endmacro %} {% macro nice_number(n) %} {% if n < 1000 %} n {% else %} {{ '{}
+000'.format(n // 1000) if n < 1000000 else '{:.1f} million'.format(n / 1000000)
+}} {% endif %} {% endmacro %}
