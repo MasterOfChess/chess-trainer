@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+{% from "macros.html" import board_column with context %}
+{% from "macros.html" import eval_bar_radio with context %}
+{% from "macros.html" import play_button with context %}
+{% block title %}
+Chess Opening Trainer
+{% endblock %}
+
+{% block head %}
+{{super()}}
+<link
+  rel="stylesheet"
+  href="{{url_for('static', filename='css/play.css')}}"
+  type="text/css"
+/>
+{% endblock %}
+
+{% block body %}
+{{super()}}
+<div class="container text-center h-75">
+  <div class="row align-items-center h-100" style="margin-top: 20px">
+    <div class="col">
+      <div class="container-fluid mb-3">
+        <div class="card border-1 border-dark">
+          <div class="card">
+            <div
+              class="card-header text-bg-secondary"
+              style="background: var(--bg-gradient)"
+            >
+              <strong>PGN</strong>
+            </div>
+            <div class="card-body bg-light text-dark">
+              <h6 class="card-title">
+                {%if player_color == 'white' %} {{current_nickname}} -
+                {{current_opponent}} {% else %} {{current_opponent}} -
+                {{current_nickname}} {% endif %}
+              </h6>
+              <p class="card-text">
+                <span id="pgn"></span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid">
+        <a
+          id="download-button"
+          href="{{url_for('index.play.download_pgn')}}"
+          role="button"
+          class="btn btn-lg btn-secondary mt-3 w-50"
+          style="background: var(--bg-gradient)"
+        >
+          Download PGN file
+        </a>
+      </div>
+    </div>
+    {{ board_column() }}
+    <div class="col">
+      {{ eval_bar_radio() }}
+      <div class="container-fluid mt-3">
+        <label for="bot-lvl-form" class="form-label">Bot lvl: 10</label>
+        <input
+          type="range"
+          class="form-range"
+          min="1"
+          max="20"
+          id="bot-lvl-form"
+        />
+      </div>
+      <div class="container-fluid mt-3 mb-3">
+        <label for="freedom-degree-form" class="form-label"
+          >Freedom degree: 3</label
+        >
+        <input
+          type="range"
+          class="form-range"
+          min="1"
+          max="5"
+          id="freedom-degree-form"
+        />
+      </div>
+      {{ play_button() }}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block after_body %}
+<script>
+  var player_on_move = "noone";
+  var player_color = "{{player_color}}";
+</script>
+<script
+  type="text/javascript"
+  language="javascript"
+  src="{{url_for('static', filename='play.js')}}"
+></script>
+<script
+  type="text/javascript"
+  language="javascript"
+  src="{{url_for('static', filename='advanced.js')}}"
+></script>
+{% endblock %}

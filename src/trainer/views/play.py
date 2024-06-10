@@ -1,18 +1,14 @@
-from flask import render_template, send_file, stream_with_context
-from flask import request, session, Blueprint, Response
+from flask import render_template, send_file
+from flask import request, session, Blueprint
 import datetime
 import chess
 import chess.engine
 import chess.pgn
-import random
 import io
 import logging
-import math
 from .paths import STOCKFISH_PATH
 from .shared_jobs import book_reader
 from .index import OPENINGS
-import json
-import threading
 
 mod = Blueprint('play', __name__)
 
@@ -24,8 +20,6 @@ logger = logging.getLogger(__name__)
 
 # Engine settings
 ENGINE_THINKING_TIME = 0.5
-
-session_lock = threading.Lock()
 
 # Session fields
 # bot_lvl: int [1, 20]
@@ -200,10 +194,10 @@ def download_pgn():
 @mod.route('/advanced')
 def advanced():
     init_new_game()
-    return render_template('play/advanced.html', player_color=session['color'])
+    return render_template('advanced.html', player_color=session['color'])
 
 
 @mod.route('/beginner')
 def play_base():
     init_new_game()
-    return render_template('play/play.html', player_color=session['color'])
+    return render_template('play.html', player_color=session['color'])
