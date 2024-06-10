@@ -42,8 +42,6 @@ var config = {
 
 board = Chessboard("board", config);
 
-updateStatus();
-
 // Promotion logic
 
 function promotionOnDragStart(source, piece, position, orientation) {
@@ -151,7 +149,13 @@ function moveToUCI(move) {
     return move.from + move.to + move.promotion;
   }
   return move.from + move.to;
+}
 
+function moveFromUCI(move_uci) {
+  let from = move_uci.slice(0, 2);
+  let to = move_uci.slice(2, 4);
+  let promotion = move_uci.slice(4, 5);
+  return { from: from, to: to, promotion: promotion };
 }
 
 async function askEngineToPlayMove(move_uci) {
@@ -165,6 +169,51 @@ async function askEngineToPlayMove(move_uci) {
       }, moveDelay);
     });
   });
+}
+
+function gameFromMoves(moves) {
+  console.log('gameFromMoves', moves);
+  new_game = new Chess();
+  for (let move of moves) {
+    new_game.move(moveFromUCI(move));
+  }
+  console.log('new_game.fen(): ' + new_game.fen());
+  return new_game;
+}
+
+function updateGameState(data) {
+  console.log('updateGameState');
+  game = gameFromMoves(data.moves);
+  console.log('game.fen(): ' + game.fen());
+  board.position(game.fen());
+  updatePlayerCardBorder();
+  $('#pgn').html(data.pgn);
+}
+
+async function fetchPostForm(url, form_data) {
+  const response = await fetch(url, {
+    'method': 'POST',
+    'body': form_data,
+  });
+  return response.json();
+}
+
+async function makeMove(move_uci) {
+  console.log('makeMove(' + move_uci + ')');
+  console.log(JSON.stringify({ move_uci: move_uci }));
+  let form_data = new FormData();
+  form_data.append('move_uci', move_uci);
+  form_data.append('phase', 'first');
+  const data = await fetchPostForm('make_move', form_data);
+  updateGameState(data);
+  if (data.ask_again === true) {
+    console.log('ask_again');
+    let form_data = new FormData();
+    form_data.append('move_uci', move_uci);
+    form_data.append('phase', 'second');
+    const data = await fetchPostForm('make_move', form_data);
+    setTimeout(() => { updateGameState(data) }, moveDelay);
+  }
 }
 
 function onDrop(source, target, piece) {
@@ -182,13 +231,8 @@ function onDrop(source, target, piece) {
   if (move === null) return "snapback";
   async function handleMove() {
     await promotionOnDrop(move, source, target, piece);
-    console.log("Making move: " + move.san);
-    game.move(move);
-    board.position(game.fen());
-    updateStatus();
-
-    await askEngineToPlayMove(moveToUCI(move));
-    updateStatus();
+    drawArrow(source, target);
+    await makeMove(moveToUCI(move));
   }
   handleMove();
 }
@@ -201,6 +245,7 @@ function onSnapEnd() {
 }
 
 function updatePlayerCardBorder() {
+  console.log('updatePlayerCardBorder');
   if (player_on_move === 'noone') {
     $('#border-bot').removeClass('border-warning');
     $('#border-top').removeClass('border-warning');
@@ -241,7 +286,25 @@ function updateStatus() {
   return true;
 }
 
+function drawArrow(source, target) {
+  console.log("Drawing arrow from " + source + " to " + target);
+  let center = $('#board .square-55d63').width() / 2;
+  let from = document.querySelector('#board .square-' + source);
+  let to = document.querySelector('#board .square-' + target);
+  let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('id', 'curr-line');
+  line.setAttribute('x1', from.offsetLeft + center);
+  line.setAttribute('y1', from.offsetTop + center);
+  line.setAttribute('x2', to.offsetLeft + center);
+  line.setAttribute('y2', to.offsetTop + center);
+  line.setAttribute('stroke', 'red');
+  line.setAttribute('stroke-width', '5');
+  $('#board-svg').append(line);
+
+}
+
 async function startGame() {
+  console.log('startGame');
   player_on_move = player_color;
   if (player_color === 'black') {
     $('#eval-bar-bot-rect').attr('fill', 'black');
@@ -255,12 +318,12 @@ async function startGame() {
     board.orientation('black');
     updateStatus();
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    await askEngineToPlayMove("None");
+    await makeMove("None");
   }
   else {
     board.orientation('white');
   }
-  updateStatus();
+  // updateStatus();
 }
 
 $('#play-button').on('click', async function () {
