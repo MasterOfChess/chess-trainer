@@ -73,7 +73,7 @@ def choose_color():
     color = request.form.get('color')
     color = 'white' if color == 'white-color' else 'black'
     session['color'] = color
-    return {'response': 'success', 'redirect': url_for('index.play.explore.explore_new_game')}
+    return {'response': 'success', 'redirect': url_for('index.play.beginner.beginner_new_game')}
 
 
 @mod.context_processor

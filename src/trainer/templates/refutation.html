@@ -1,23 +1,13 @@
-{% extends "layout.html" %}
-{% from "macros.html" import board_column with context %}
-{% from "macros.html" import eval_bar_radio with context %}
-{% from "macros.html" import play_button with context %}
-
-{% block title %}
-Chess Opening Trainer
-{% endblock %}
-
-{% block head %}
-{{super()}}
+{% extends "layout.html" %} {% from "macros.html" import board_column with
+context %} {% from "macros.html" import eval_bar_radio with context %} {% from
+"macros.html" import play_button with context %} {% block title %} Chess Opening
+Trainer {% endblock %} {% block head %} {{super()}}
 <link
   rel="stylesheet"
   href="{{url_for('static', filename='css/play.css')}}"
   type="text/css"
 />
-{% endblock %}
-
-{% block body %}
-{{super()}}
+{% endblock %} {% block body %} {{super()}}
 <div class="container text-center h-75">
   <div class="row align-items-center h-100" style="margin-top: 20px">
     <div class="col">
@@ -37,7 +27,7 @@ Chess Opening Trainer
                 {{current_nickname}} {% endif %}
               </h6>
               <p class="card-text">
-                <span id="pgn">{{pgn}}</span>
+                <span id="pgn"></span>
               </p>
             </div>
           </div>
@@ -56,9 +46,6 @@ Chess Opening Trainer
       </div>
     </div>
 
-
-
-
     <div class="col-5 align-items-center container-fluid h-100">
       <div class="row">
         <div class="col g-0">
@@ -76,7 +63,7 @@ Chess Opening Trainer
       <div class="row" style="height: 500px">
         <div class="col-1 vstack g-0 p-1">
           <div class="card border-2 h-100 w-75 border-secondary align-self-end">
-            <svg id="eval-bar-top" width="100%" height="{{100-score}}%">
+            <svg id="eval-bar-top" width="100%" height="50%">
               <rect
                 id="eval-bar-top-rect"
                 width="100%"
@@ -88,7 +75,7 @@ Chess Opening Trainer
                 fill="black"
               />
             </svg>
-            <svg id="eval-bar-bot" width="100%" height="{{score|tojson}}%">
+            <svg id="eval-bar-bot" width="100%" height="50%">
               <rect
                 id="eval-bar-bot-rect"
                 width="100%"
@@ -112,7 +99,15 @@ Chess Opening Trainer
             style="opacity: 0.9; pointer-events: none"
           >
             <defs id="board-defs">
-              <pattern id="book-unknown-pattern" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+              <pattern
+                id="book-unknown-pattern"
+                x="0"
+                y="0"
+                width="62"
+                height="62"
+                fill-opacity="0.0"
+                patternUnits="userSpaceOnUse"
+              >
                 <image
                   x="9"
                   y="9"
@@ -128,7 +123,15 @@ Chess Opening Trainer
                   href="{{url_for('static', filename='images/question.svg')}}"
                 />
               </pattern>
-              <pattern id="book-sideline-pattern" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+              <pattern
+                id="book-sideline-pattern"
+                x="0"
+                y="0"
+                width="62"
+                height="62"
+                fill-opacity="0.0"
+                patternUnits="userSpaceOnUse"
+              >
                 <image
                   x="9"
                   y="9"
@@ -144,7 +147,15 @@ Chess Opening Trainer
                   href="{{url_for('static', filename='images/question.svg')}}"
                 />
               </pattern>
-              <pattern id="book-mainline-pattern" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+              <pattern
+                id="book-mainline-pattern"
+                x="0"
+                y="0"
+                width="62"
+                height="62"
+                fill-opacity="0.0"
+                patternUnits="userSpaceOnUse"
+              >
                 <image
                   x="9"
                   y="9"
@@ -160,7 +171,15 @@ Chess Opening Trainer
                   href="{{url_for('static', filename='images/exclamation.svg')}}"
                 />
               </pattern>
-              <pattern id="blunder-pattern" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+              <pattern
+                id="blunder-pattern"
+                x="0"
+                y="0"
+                width="62"
+                height="62"
+                fill-opacity="0.0"
+                patternUnits="userSpaceOnUse"
+              >
                 <image
                   x="9"
                   y="9"
@@ -169,7 +188,15 @@ Chess Opening Trainer
                   href="{{url_for('static', filename='images/question-square-red.svg')}}"
                 />
               </pattern>
-              <pattern id="inaccuracy-pattern" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+              <pattern
+                id="inaccuracy-pattern"
+                x="0"
+                y="0"
+                width="62"
+                height="62"
+                fill-opacity="0.0"
+                patternUnits="userSpaceOnUse"
+              >
                 <image
                   x="9"
                   y="9"
@@ -202,15 +229,7 @@ Chess Opening Trainer
       </div>
     </div>
 
-
-
-
-
-
-
-
     <div class="col">
-      {{ eval_bar_radio() }}
       <div class="hstack">
         <div class="container-fluid">
           <button
@@ -231,69 +250,56 @@ Chess Opening Trainer
           </button>
         </div>
       </div>
-      <div class="container-fluid mb-3 mt-3" style="height: 100px;">
-        <div class="card border-1 border-dark h-100">
-          <div class="card h-100">
-            <div class="card-body text-light h-100"  style="background: var(--bg-gradient)">
-              <p class="card-text">
-                <span id="move-message"><strong>{{move_message}}</strong></span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div id="refute-container" class="container-fluid" style="display: none;">
-        <form action="{{url_for('index.play.refute')}}" method="post">
-          <input id="refute-fen" type="hidden" name="fen" value="{{fen}}">
-          <input id="refute-refutation" type="hidden" name="refutation" value="{{refutation}}">
-          <input id="refute-return-url" type="hidden" name="return_url" value="{{url_for('index.play.explore.explore')}}">
-          <input type="submit" value="Show refutation" class="btn btn-lg btn-secondary mt-3 w-100">
-        </form>
+      <div class="container-fluid">
+        <a
+          id="return-button"
+          href="{{return_url}}"
+          class="btn btn-lg btn-secondary mt-3 w-100"
+          role="button"
+        >
+          Return to the game
+        </a>
       </div>
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block after_body %}
-{{super()}}
+{% endblock %} {% block after_body %} {{super()}}
 <script>
-  var player_on_move = "noone";
   var player_color = "{{player_color}}";
-</script>
-<script
-  type="text/javascript"
-  language="javascript"
-  src="{{url_for('static', filename='play.js')}}"
-></script>
-<script>
   const fen = {{fen|tojson}};
-  const pgn = {{pgn|tojson}};
-  const bar_score = {{score|tojson}};
-  var game = new gameFromMoves({{moves|tojson}});
-  
-</script>
-<script
-type="text/javascript"
-language="javascript"
-src="{{url_for('static', filename='explore.js')}}"
-></script>
-<script>
+  console.log(fen);
+  const pv_moves = JSON.parse({{refutation|tojson}});
+  var current_move = 0;
+  var game = new Chess(fen);
+  var config = {
+    draggable: false,
+    position: game.fen(),
+  };
+  board = Chessboard("board", config);
+  $("#eval-bar-bot-rect").attr("display", "none");
+  $("#eval-bar-top-rect").attr("display", "none");
   if (player_color === "black") {
     board.orientation("black");
-    $('#eval-bar-bot-rect').attr('fill', 'black');
-    $('#eval-bar-top-rect').attr('fill', 'white');
-  }
-  else {
+  } else {
     board.orientation("white");
-    $('#eval-bar-bot-rect').attr('fill', 'white');
-    $('#eval-bar-top-rect').attr('fill', 'black');
   }
-  {% if mainline is not none %}
-  drawArrow({{mainline.move[:2]|tojson}}, {{mainline.move[2:4]|tojson}}, "{{mainline.popularity|tojson}}%", "green");
-  {% endif %}
-  {% for sideline in sidelines %}
-  drawArrow({{sideline.move[:2]|tojson}}, {{sideline.move[2:4]|tojson}}, "{{sideline.popularity|tojson}}%", "yellow");
-  {% endfor %}
+  $("#prev-button").on("click", function () {
+    if (current_move > 0) {
+      game.undo();
+      current_move--;
+      board.position(game.fen());
+    }
+  });
+  $("#next-button").on("click", function () {
+    if (current_move < pv_moves.length) {
+      game.move({
+        from: pv_moves[current_move].slice(0, 2),
+        to: pv_moves[current_move].slice(2, 4),
+        promotion: pv_moves[current_move].slice(4, 5),
+      });
+      current_move++;
+      board.position(game.fen());
+    }
+  });
 </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, redirect, url_for
 from flask import request, session, Blueprint
 import chess
 import chess.engine
@@ -142,7 +142,7 @@ def get_render_data(game_state: GameState,
         'mainline': mainline,
         'sidelines': sidelines,
         'score': score,
-        'active_bar': True,
+        'active_bar': session['active_bar'],
         'refutation': '',
         'move_message': '',
         'icon': None
@@ -166,6 +166,7 @@ def save_game_state(game_state: GameState):
 def make_move():
     move_uci = request.form.get('move_uci')
     move = chess.Move.from_uci(move_uci)
+    print('/make_move', move)
     game_state = restore_game_state()
     old_pos_info = assess_position(game_state.board,
                                    session['current_book_path'])
@@ -192,11 +193,15 @@ def make_move():
                 'move_message'] = 'Some sidelines are not as good as others'
             data['data']['icon'] = 'inaccuracy'
             data['data']['square'] = move.uci()[2:4]
+            data['data']['refutation'] = json.dumps(
+                [m.uci() for m in move_info.pv])
 
         else:
             data['data']['move_message'] = 'This is not a part of the opening'
             data['data']['icon'] = 'inaccuracy'
             data['data']['square'] = move.uci()[2:4]
+            data['data']['refutation'] = json.dumps(
+                [m.uci() for m in move_info.pv])
 
     elif move_info.move_type == MoveType.BLUNDER:
         if move_info.line_type == LineType.MAIN:
@@ -205,11 +210,15 @@ def make_move():
             data['data']['move_message'] = 'This sideline is a blunder'
             data['data']['icon'] = 'blunder'
             data['data']['square'] = move.uci()[2:4]
+            data['data']['refutation'] = json.dumps(
+                [m.uci() for m in move_info.pv])
 
         else:
             data['data']['move_message'] = 'This is not a part of the opening'
             data['data']['icon'] = 'blunder'
             data['data']['square'] = move.uci()[2:4]
+            data['data']['refutation'] = json.dumps(
+                [m.uci() for m in move_info.pv])
 
     return data
 
@@ -244,6 +253,7 @@ def explore_new_game():
     print("Endpoint explore")
     game_state = GameState.initialize(session['color'], session['nickname'],
                                       session['current_book'])
+    session['active_bar'] = True
     print('Initialized')
     save_game_state(game_state)
     return redirect(url_for('index.play.explore.explore'))

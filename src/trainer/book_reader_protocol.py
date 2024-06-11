@@ -220,8 +220,12 @@ class FromFenCommand(BaseCommand[BaseProtocol, EdgeResult]):
             return
         assert self.expected_lines is not None
         self.processed_lines += 1
+        # Fixes problem with different 0-0 convention
+        self.edge_result.board.push(chess.Move.from_uci(words[0]))
         self.edge_result.edges.append(
-            Edge(chess.Move.from_uci(words[0]), int(words[1])))
+            Edge(self.edge_result.board.peek(), int(words[1])))
+        self.edge_result.board.pop()
+
         if self.processed_lines == self.expected_lines:
             self.set_done(self.edge_result)
 

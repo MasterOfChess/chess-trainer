@@ -1,4 +1,5 @@
 var board = null;
+var board_locked = false;
 var config = {
   draggable: true,
   position: game.fen(),
@@ -33,6 +34,7 @@ $('#next-button').on('click', function () {
 function onDragStart(source, piece, position, orientation) {
   console.log('onDragStart', source, piece, position, orientation)
   promotionOnDragStart(source, piece, position, orientation)
+  if (board_locked) return false
   if (game.game_over()) return false
   if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
     (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
@@ -41,16 +43,22 @@ function onDragStart(source, piece, position, orientation) {
   return true;
 }
 
-async function makeMove(move_uci) {
-  console.log('makeMove', move_uci)
-  $.post('make_move', { move_uci: move_uci }, function (data) {
-    if (data['redirect']) {
-      window.location.href = data['url'];
-    }
-    else {
+async function makeMove(move_uci, phase) {
+  console.log('makeMove', move_uci, phase)
+  if (phase === 'first') {
+    await $.post('make_move', { move_uci: move_uci, phase: 'first' }, function (data) {
       updateSite(data['data']);
-    }
-  });
+    });
+  }
+  else {
+    await $.post('make_move', { move_uci: move_uci, phase: 'second' }, function (data) {
+      if (data['data'].bot_move) {
+        game.move(moveFromUCI(data['data'].bot_move));
+        board.position(game.fen());
+      }
+      updateSite(data['data']);
+    });
+  }
 
 }
 
@@ -70,7 +78,9 @@ function onDrop(source, target, piece) {
   async function handleMove() {
     await promotionOnDrop(game, move, source, target, piece);
     game.move(move);
-    await makeMove(moveToUCI(move));
+    await makeMove(moveToUCI(move), 'first');
+    if (board_locked) return;
+    await makeMove(moveToUCI(move), 'second');
   }
   handleMove();
 }
@@ -98,6 +108,12 @@ function updateSite(data) {
   else {
     $('#eval-bar-top').attr('display', 'none');
     $('#eval-bar-bot').attr('display', 'none');
+  }
+  if (data.lock_board) {
+    board_locked = true;
+  }
+  else {
+    board_locked = false;
   }
   clearSVGBoard();
   if (data.move_message) {

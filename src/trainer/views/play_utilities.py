@@ -1,5 +1,3 @@
-from flask import session
-import io
 import chess
 import chess.pgn
 import chess.engine
@@ -8,7 +6,6 @@ from .shared_jobs import book_reader
 import enum
 import dataclasses
 from ..book_reader_protocol import EdgeResult
-import json
 
 # Might be a good idea to make it opening dependent
 START_HALFMOVES_LENGTH = 0
@@ -94,6 +91,16 @@ def assess_move(board: chess.Board, move: chess.Move,
     line_type = LineType.UNKNOWN
     if move in list(map(lambda x: x[0], position_assessment.sidelines)):
         line_type = LineType.SIDELINE
-    if move == position_assessment.mainline[0]:
+    if position_assessment.mainline and move == position_assessment.mainline[0]:
         line_type = LineType.MAIN
     return MoveAssessment(move_type, line_type, info['score'], info['pv'])
+
+
+def find_best_move(board: chess.Board, lvl: int, opening: str) -> chess.Move:
+    result = book_reader.from_fen(opening, board.fen())
+    if result.edges:
+        return result.edges[0].move
+    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    engine.configure({'Skill level': lvl})
+    result = engine.play(board, chess.engine.Limit(time=0.2))
+    return result.move

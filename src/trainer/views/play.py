@@ -106,18 +106,6 @@ def choose_engine_move(board: chess.Board):
     return board.fen()
 
 
-# def choose_move(board: chess.Board):
-#     if not session['in_book']:
-#         return choose_engine_move(board)
-#     edge_result = book_reader.from_fen(session['current_book_path'],
-#                                        board.fen())
-#     if not edge_result.edges:
-#         return choose_engine_move(board)
-#     logger.info('\n'.join(map(str, edge_result.edges)))
-#     available_edges = edge_result.edges[:session['freedom_degree']]
-#     edge = random.choice(available_edges)
-#     board.push(edge.move)
-#     return board.fen()
 def choose_move(board: chess.Board) -> chess.Move:
     edge_result = book_reader.from_fen(session['current_book_path'],
                                        board.fen())
@@ -204,6 +192,10 @@ def download_pgn():
 
 # Main routes
 
+# @mod.route('/beginner')
+# def beginner():
+#     init_new_game()
+#     return render_template('beginner.html', player_color=session['color'])
 
 @mod.route('/advanced')
 def advanced():
@@ -211,7 +203,14 @@ def advanced():
     return render_template('advanced.html', player_color=session['color'])
 
 
-@mod.route('/beginner')
-def play_base():
-    init_new_game()
-    return render_template('play.html', player_color=session['color'])
+# @mod.route('/beginner')
+# def play_base():
+#     init_new_game()
+#     return render_template('play.html', player_color=session['color'])
+
+@mod.route('/refute', methods=['POST'])
+def refute():
+    fen = request.form.get('fen')
+    refutation = request.form.get('refutation')
+    return_url = request.form.get('return_url')
+    return render_template('refutation.html', fen=fen, refutation=refutation, return_url=return_url)
