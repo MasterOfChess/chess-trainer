@@ -129,7 +129,7 @@ function updateSite(data) {
     }
   }
   else {
-    $('#refute-container').attr('display', 'none');
+    $('#refute-container').css('display', 'none');
     if (data.mainline) {
       let move_obj = moveFromUCI(data.mainline.move);
       drawArrow(move_obj.from, move_obj.to, data.mainline.popularity + '%', 'green');

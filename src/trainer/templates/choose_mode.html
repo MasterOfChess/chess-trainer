@@ -1,0 +1,27 @@
+{% extends "layout.html" %} {% block title %}Choose Color{% endblock %} {% block
+head %} {{super()}} {% endblock %} {% block body %} {{super()}}
+<div class="container text-center">
+  <div class="d-grid gap-2 col-6 mx-auto">
+    <button
+      id="explore"
+      type="button"
+      class="btn btn-lg btn-secondary choose-color"
+    >
+      Explore
+    </button>
+    <button
+      id="beginner"
+      type="button"
+      class="btn btn-lg btn-secondary choose-color"
+    >
+      Beginner
+    </button>
+  </div>
+</div>
+{% endblock %} {% block after_body %}
+<script
+  type="text/javascript"
+  language="javascript"
+  src="{{url_for('static', filename='choose_mode.js')}}"
+></script>
+{% endblock %}

@@ -73,7 +73,29 @@ def choose_color():
     color = request.form.get('color')
     color = 'white' if color == 'white-color' else 'black'
     session['color'] = color
-    return {'response': 'success', 'redirect': url_for('index.play.beginner.beginner_new_game')}
+    return {
+        'response': 'success',
+        'redirect': url_for('index.choose_mode')
+    }
+
+
+@mod.route('/choose_mode', methods=['GET', 'POST'])
+def choose_mode():
+    if request.method == 'GET':
+        return render_template('choose_mode.html')
+    mode = request.form.get('mode')
+    session['mode'] = mode
+    if mode == 'explore':
+        return {
+            'response': 'success',
+            'redirect': url_for('index.play.explore.explore_new_game')
+        }
+    if mode == 'beginner':
+        return {
+            'response': 'success',
+            'redirect': url_for('index.play.beginner.beginner_new_game')
+        }
+    return {'response': 'error', 'redirect': url_for('index.index')}
 
 
 @mod.context_processor
