@@ -91,6 +91,13 @@ class GameState:
         return self.game.accept(chess.pgn.StringExporter())
 
 
+def get_absolute_score(game_state: GameState, pos_info: PositionAssessment) -> int:
+    if (game_state.board.turn == chess.WHITE 
+        and session['color'] == 'white') or (game_state.board.turn == chess.BLACK
+                                             and session['color'] == 'black'):
+        return int(pos_info.score.relative.wdl().expectation() * 100)
+    return 100 - int(pos_info.score.relative.wdl().expectation() * 100)
+
 def get_render_data_second_phase(
         game_state: GameState, pos_info: PositionAssessment) -> dict[str, Any]:
     mainline = dataclasses.asdict(
@@ -101,7 +108,7 @@ def get_render_data_second_phase(
         dataclasses.asdict(GameLine(move.uci(), popularity))
         for move, popularity in pos_info.sidelines
     ]
-    score = int(pos_info.score.relative.wdl().expectation() * 100)
+    score = get_absolute_score(game_state, pos_info)
     move = None
     if game_state.board.is_game_over():
         game_state.game.headers['Result'] = game_state.board.result()
@@ -131,7 +138,7 @@ def get_render_data_second_phase(
 def get_render_data_first_phase(game_state: GameState,
                                 pos_info: PositionAssessment) -> dict[str, Any]:
     moves = [move.uci() for move in game_state.board.move_stack]
-    score = int(pos_info.score.relative.wdl().expectation() * 100)
+    score = get_absolute_score(game_state, pos_info)
     return {
         'player_color': session['color'],
         'fen': game_state.board.fen(),
@@ -166,7 +173,7 @@ def get_render_data_blunder(game_state: GameState, pos_info: PositionAssessment,
         'moves': [move.uci() for move in game_state.board.move_stack],
         'mainline': None,
         'sidelines': [],
-        'score': int(pos_info.score.relative.wdl().expectation() * 100),
+        'score': get_absolute_score(game_state, pos_info),
         'active_bar': session['active_bar'],
         'refutation': json.dumps([m.uci() for m in move_info.pv]),
         'move_message': 'This is a blunder',
@@ -187,7 +194,7 @@ def get_render_data_inaccuracy(game_state: GameState,
         'moves': [move.uci() for move in game_state.board.move_stack],
         'mainline': None,
         'sidelines': [],
-        'score': int(pos_info.score.relative.wdl().expectation() * 100),
+        'score': get_absolute_score(game_state, pos_info),
         'active_bar': session['active_bar'],
         'refutation': json.dumps([m.uci() for m in move_info.pv]),
         'move_message': 'This is an inaccuracy',
@@ -207,7 +214,7 @@ def get_render_data_unknown(game_state: GameState, pos_info: PositionAssessment,
         'moves': [move.uci() for move in game_state.board.move_stack],
         'mainline': None,
         'sidelines': [],
-        'score': int(pos_info.score.relative.wdl().expectation() * 100),
+        'score': get_absolute_score(game_state, pos_info),
         'active_bar': session['active_bar'],
         'refutation': '',
         'move_message': 'This is not a part of this opening',

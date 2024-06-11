@@ -116,9 +116,9 @@ function updateSite(data) {
     board_locked = false;
   }
   clearSVGBoard();
-  if (data.move_message) {
-    $('#move-message').html(data.move_message);
-  }
+  // if (data.move_message) {
+  //   $('#move-message').html(data.move_message);
+  // }
   if (data.icon) {
     drawMoveIcon(data.square, data.icon + '-pattern');
     if (data.refutation !== '') {

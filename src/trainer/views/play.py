@@ -213,4 +213,4 @@ def refute():
     fen = request.form.get('fen')
     refutation = request.form.get('refutation')
     return_url = request.form.get('return_url')
-    return render_template('refutation.html', fen=fen, refutation=refutation, return_url=return_url)
+    return render_template('refutation.html', fen=fen, refutation=refutation, player_color=session['color'], return_url=return_url)
