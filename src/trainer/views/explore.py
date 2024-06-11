@@ -8,7 +8,7 @@ import logging
 import datetime
 from .index import OPENINGS
 from .play_utilities import PositionAssessment, MoveAssessment, LineType, MoveType
-from .play_utilities import assess_move, assess_position
+from .play_utilities import assess_move, assess_position, get_absolute_score
 from typing import Any
 import dataclasses
 import json
@@ -128,7 +128,7 @@ def get_render_data(game_state: GameState,
         dataclasses.asdict(GameLine(move.uci(), popularity))
         for move, popularity in pos_info.sidelines
     ]
-    score = int(pos_info.score.relative.wdl().expectation() * 100)
+    score = get_absolute_score(game_state.board, pos_info, session['color'])
     print('Rendering')
     print(session['color'])
     print(game_state.board.fen())

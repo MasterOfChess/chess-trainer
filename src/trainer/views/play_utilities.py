@@ -104,3 +104,10 @@ def find_best_move(board: chess.Board, lvl: int, opening: str) -> chess.Move:
     engine.configure({'Skill level': lvl})
     result = engine.play(board, chess.engine.Limit(time=0.2))
     return result.move
+
+def get_absolute_score(board: chess.Board, pos_info: PositionAssessment, player_color: str) -> int:
+    if (board.turn == chess.WHITE 
+        and player_color== 'white') or (board.turn == chess.BLACK
+                                             and player_color == 'black'):
+        return int(pos_info.score.relative.wdl().expectation() * 100)
+    return 100 - int(pos_info.score.relative.wdl().expectation() * 100)
