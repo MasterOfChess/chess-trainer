@@ -134,60 +134,60 @@ function onSnapEnd() {
   board.position(game.fen());
 }
 
-function clearSVGBoard() {
-  $('.board-animation').remove();
+// function clearSVGBoard() {
+//   $('.board-animation').remove();
 
-}
+// }
 
-function drawArrow(source, target, text, color) {
-  console.log("Drawing arrow from " + source + " to " + target + " with text " + text + " and color " + color);
-  let center = $('#board .square-55d63').width() / 2;
-  let from = document.querySelector('#board .square-' + source);
-  let to = document.querySelector('#board .square-' + target);
-  let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  let marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-  marker.setAttribute('id', 'arrow');
-  marker.setAttribute('markerWidth', '4');
-  marker.setAttribute('markerHeight', '4');
-  marker.setAttribute('viewBox', '0 -10 20 20');
-  marker.setAttribute('refX', '14');
-  marker.setAttribute('refY', '0');
-  marker.setAttribute('orient', 'auto');
-  let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M 0,-10 L 0,10 L 20,0 Z');
-  path.setAttribute('fill', color);
-  marker.appendChild(path);
-  $('#board-defs').append(marker);
-  line.classList.add('board-animation');
-  line.setAttribute('id', 'curr-line');
-  line.setAttribute('x1', from.offsetLeft + center);
-  line.setAttribute('y1', from.offsetTop + center);
-  line.setAttribute('x2', to.offsetLeft + center);
-  line.setAttribute('y2', to.offsetTop + center);
-  line.setAttribute('stroke', color);
-  line.setAttribute('stroke-width', '10');
-  line.setAttribute('marker-end', 'url(#arrow)');
-  $('#board-svg').append(line);
+// function drawArrow(source, target, text, color) {
+//   console.log("Drawing arrow from " + source + " to " + target + " with text " + text + " and color " + color);
+//   let center = $('#board .square-55d63').width() / 2;
+//   let from = document.querySelector('#board .square-' + source);
+//   let to = document.querySelector('#board .square-' + target);
+//   let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+//   let marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+//   marker.setAttribute('id', 'arrow');
+//   marker.setAttribute('markerWidth', '4');
+//   marker.setAttribute('markerHeight', '4');
+//   marker.setAttribute('viewBox', '0 -10 20 20');
+//   marker.setAttribute('refX', '14');
+//   marker.setAttribute('refY', '0');
+//   marker.setAttribute('orient', 'auto');
+//   let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+//   path.setAttribute('d', 'M 0,-10 L 0,10 L 20,0 Z');
+//   path.setAttribute('fill', color);
+//   marker.appendChild(path);
+//   $('#board-defs').append(marker);
+//   line.classList.add('board-animation');
+//   line.setAttribute('id', 'curr-line');
+//   line.setAttribute('x1', from.offsetLeft + center);
+//   line.setAttribute('y1', from.offsetTop + center);
+//   line.setAttribute('x2', to.offsetLeft + center);
+//   line.setAttribute('y2', to.offsetTop + center);
+//   line.setAttribute('stroke', color);
+//   line.setAttribute('stroke-width', '10');
+//   line.setAttribute('marker-end', 'url(#arrow)');
+//   $('#board-svg').append(line);
 
-  let white_text_elem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  white_text_elem.setAttribute('x', (from.offsetLeft + to.offsetLeft) / 2 + center);
-  white_text_elem.setAttribute('y', (from.offsetTop + to.offsetTop) / 2 + center);
-  white_text_elem.setAttribute('fill', 'white');
-  white_text_elem.setAttribute('stroke', 'white');
-  white_text_elem.setAttribute('stroke-width', '5');
-  white_text_elem.setAttribute('text-anchor', 'middle');
-  white_text_elem.innerHTML = text;
-  white_text_elem.classList.add('board-animation');
-  $('#board-svg').append(white_text_elem);
-  let text_elem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  text_elem.setAttribute('x', (from.offsetLeft + to.offsetLeft) / 2 + center);
-  text_elem.setAttribute('y', (from.offsetTop + to.offsetTop) / 2 + center);
-  text_elem.setAttribute('fill', color);
-  text_elem.setAttribute('text-anchor', 'middle');
-  text_elem.innerHTML = text;
-  text_elem.classList.add('board-animation');
-  $('#board-svg').append(text_elem);
-}
+//   let white_text_elem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+//   white_text_elem.setAttribute('x', (from.offsetLeft + to.offsetLeft) / 2 + center);
+//   white_text_elem.setAttribute('y', (from.offsetTop + to.offsetTop) / 2 + center);
+//   white_text_elem.setAttribute('fill', 'white');
+//   white_text_elem.setAttribute('stroke', 'white');
+//   white_text_elem.setAttribute('stroke-width', '5');
+//   white_text_elem.setAttribute('text-anchor', 'middle');
+//   white_text_elem.innerHTML = text;
+//   white_text_elem.classList.add('board-animation');
+//   $('#board-svg').append(white_text_elem);
+//   let text_elem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+//   text_elem.setAttribute('x', (from.offsetLeft + to.offsetLeft) / 2 + center);
+//   text_elem.setAttribute('y', (from.offsetTop + to.offsetTop) / 2 + center);
+//   text_elem.setAttribute('fill', color);
+//   text_elem.setAttribute('text-anchor', 'middle');
+//   text_elem.innerHTML = text;
+//   text_elem.classList.add('board-animation');
+//   $('#board-svg').append(text_elem);
+// }
 
 function drawMoveIcon(square, pattern) {
   console.log('drawing move icon ' + square + ' ' + pattern);
@@ -217,7 +217,6 @@ async function startGame() {
   }
   if (player_color === "black") {
     board.orientation('black');
-    updateStatus();
     await new Promise((resolve) => setTimeout(resolve, 1000));
     await makeMove("None");
   }

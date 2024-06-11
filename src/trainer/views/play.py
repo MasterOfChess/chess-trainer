@@ -182,6 +182,20 @@ def make_move():
     return resp
 
 
+@mod.route('/eval_bar_on', methods=['GET'])
+def eval_bar_on():
+    logger.info('Eval bar on')
+    session['active_bar'] = True
+    return {}
+
+
+@mod.route('/eval_bar_off', methods=['GET'])
+def eval_bar_off():
+    logger.info('Eval bar off')
+    session['active_bar'] = False
+    return {}
+
+
 @mod.route('/download_pgn')
 def download_pgn():
     pgn = session['game']

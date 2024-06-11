@@ -1,0 +1,246 @@
+{% extends "layout.html" %}
+{% from "macros.html" import board_column with context %}
+{% from "macros.html" import eval_bar_radio with context %}
+{% from "macros.html" import play_button with context %}
+
+{% block title %}
+Chess Opening Trainer
+{% endblock %}
+
+{% block head %}
+{{super()}}
+<link
+  rel="stylesheet"
+  href="{{url_for('static', filename='css/play.css')}}"
+  type="text/css"
+/>
+{% endblock %}
+
+{% block body %}
+{{super()}}
+<div class="container text-center h-75">
+  <div class="row align-items-center h-100" style="margin-top: 20px">
+    <div class="col">
+      <div class="container-fluid mb-3">
+        <div class="card border-1 border-dark">
+          <div class="card">
+            <div
+              class="card-header text-bg-secondary"
+              style="background: var(--bg-gradient)"
+            >
+              <strong>PGN</strong>
+            </div>
+            <div class="card-body bg-light text-dark">
+              <h6 class="card-title">
+                {%if player_color == 'white' %} {{current_nickname}} -
+                {{current_opponent}} {% else %} {{current_opponent}} -
+                {{current_nickname}} {% endif %}
+              </h6>
+              <p class="card-text">
+                <span id="pgn">{{pgn}}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid">
+        <a
+          id="download-button"
+          href="{{url_for('index.play.download_pgn')}}"
+          role="button"
+          class="btn btn-lg btn-secondary mt-3 w-50"
+          style="background: var(--bg-gradient)"
+        >
+          Download PGN file
+        </a>
+      </div>
+    </div>
+
+
+
+
+    <div class="col-5 align-items-center container-fluid h-100">
+      <div class="row">
+        <div class="col g-0">
+          <div class="container-fluid p-2 mb-1">
+            <div id="border-top" class="card border-3 border-secondary">
+              <div class="card text-bg-secondary">
+                <div class="card-text mt-2">
+                  <h5 class="card-title">{{current_opponent}}</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="height: 500px">
+        <div class="col-1 vstack g-0 p-1">
+          <div class="card border-2 h-100 w-75 border-secondary align-self-end">
+            <svg id="eval-bar-top" width="100%" height="{{100-score}}%">
+              <rect
+                id="eval-bar-top-rect"
+                width="100%"
+                height="100%"
+                x="0"
+                y="0"
+                rx="0"
+                ry="0"
+                fill="black"
+              />
+            </svg>
+            <svg id="eval-bar-bot" width="100%" height="{{score|tojson}}%">
+              <rect
+                id="eval-bar-bot-rect"
+                width="100%"
+                height="100%"
+                x="0"
+                y="0"
+                rx="0"
+                ry="0"
+                fill="white"
+              />
+            </svg>
+          </div>
+        </div>
+        <div class="col-11 g-0 position-relative">
+          <svg
+            id="board-svg"
+            class="position-absolute top-0 start-0 z-1"
+            width="500"
+            height="500"
+            xmlns="http://www.w3.org/2000/svg"
+            style="opacity: 0.9; pointer-events: none"
+          >
+            <defs id="board-defs">
+              <pattern id="book-sideline" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+                <image
+                  x="9"
+                  y="9"
+                  width="48"
+                  height="48"
+                  href="{{url_for('static', filename='images/book-fill-yellow.svg')}}"
+                />
+                <image
+                  x="12"
+                  y="10"
+                  width="44"
+                  height="44"
+                  href="{{url_for('static', filename='images/question.svg')}}"
+                />
+              </pattern>
+              <pattern id="book-mainline" x="0" y="0" width="62" height="62" fill-opacity="0.0" patternUnits="userSpaceOnUse">
+                <image
+                  x="9"
+                  y="9"
+                  width="48"
+                  height="48"
+                  href="{{url_for('static', filename='images/book-fill-green.svg')}}"
+                />
+                <image
+                  x="12"
+                  y="10"
+                  width="44"
+                  height="44"
+                  href="{{url_for('static', filename='images/exclamation.svg')}}"
+                />
+              </pattern>
+            </defs>
+          </svg>
+          <div
+            id="board"
+            class="position-absolute top-0 start-0 z-0"
+            style="width: 500px"
+          ></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col g-0">
+          <div class="container-fluid p-2 mb-1 mt-1">
+            <div id="border-bot" class="card border-3 border-secondary">
+              <div class="card text-bg-secondary">
+                <div class="card-text mt-2">
+                  <h5 class="card-title">{{current_nickname}}</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+
+
+
+
+
+    <div class="col">
+      {{ eval_bar_radio() }}
+      <div class="hstack">
+        <div class="container-fluid">
+          <button
+            id="prev-button"
+            type="button"
+            class="btn btn-lg btn-secondary mt-3 w-75"
+          >
+            <i class="bi bi-arrow-left"></i>
+          </button>
+        </div>
+        <div class="container-fluid">
+          <button
+            id="next-button"
+            type="button"
+            class="btn btn-lg btn-secondary mt-3 w-75"
+          >
+            <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block after_body %}
+{{super()}}
+<script>
+  var player_on_move = "noone";
+  var player_color = "{{player_color}}";
+</script>
+<script
+  type="text/javascript"
+  language="javascript"
+  src="{{url_for('static', filename='play.js')}}"
+></script>
+<script>
+  const fen = {{fen|tojson}};
+  const pgn = {{pgn|tojson}};
+  const bar_score = {{score|tojson}};
+  var game = new gameFromMoves({{moves|tojson}});
+  
+</script>
+<script
+type="text/javascript"
+language="javascript"
+src="{{url_for('static', filename='explore.js')}}"
+></script>
+<script>
+  if (player_color === "black") {
+    board.orientation("black");
+    $('#eval-bar-bot-rect').attr('fill', 'black');
+    $('#eval-bar-top-rect').attr('fill', 'white');
+  }
+  else {
+    board.orientation("white");
+    $('#eval-bar-bot-rect').attr('fill', 'white');
+    $('#eval-bar-top-rect').attr('fill', 'black');
+  }
+  {% if mainline is not none %}
+  drawArrow({{mainline.move[:2]|tojson}}, {{mainline.move[2:4]|tojson}}, "{{mainline.popularity|tojson}}%", "green");
+  {% endif %}
+  {% for sideline in sidelines %}
+  drawArrow({{sideline.move[:2]|tojson}}, {{sideline.move[2:4]|tojson}}, "{{sideline.popularity|tojson}}%", "yellow");
+  {% endfor %}
+</script>
+{% endblock %}

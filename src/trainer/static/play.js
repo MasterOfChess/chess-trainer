@@ -4,10 +4,12 @@ const moveDelay = 300; // allows better experience
 var promotion_running = false;
 
 $('#eval-bar-on').on('click', async function () {
+  $.get('/play/eval_bar_on');
   $('#eval-bar-top').attr('display', 'block');
   $('#eval-bar-bot').attr('display', 'block');
 });
 $('#eval-bar-off').on('click', async function () {
+  $.get('/play/eval_bar_off');
   $('#eval-bar-top').attr('display', 'none');
   $('#eval-bar-bot').attr('display', 'none');
 });
@@ -25,6 +27,7 @@ function moveToUCI(move) {
 }
 
 function moveFromUCI(move_uci) {
+  console.log("moveFromUCI: " + move_uci);
   let from = move_uci.slice(0, 2);
   let to = move_uci.slice(2, 4);
   let promotion = move_uci.slice(4, 5);
@@ -130,6 +133,7 @@ function gameFromMoves(moves) {
   for (let move of moves) {
     new_game.move(moveFromUCI(move));
   }
+  console.log('gameFromMoves: ' + new_game.fen());
   return new_game;
 }
 
@@ -183,3 +187,60 @@ function updatePlayerCardBorder(game) {
   }
 }
 
+function drawArrow(source, target, text, color) {
+  console.log("Drawing arrow from " + source + " to " + target + " with text " + text + " and color " + color);
+  let center = $('#board .square-55d63').width() / 2;
+  let from = document.querySelector('#board .square-' + source);
+  let to = document.querySelector('#board .square-' + target);
+  let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  let marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+  marker.classList.add('board-animation');
+  marker_id = 'arrow' + source + target;
+  marker.setAttribute('id', marker_id);
+  marker.setAttribute('markerWidth', '4');
+  marker.setAttribute('markerHeight', '4');
+  marker.setAttribute('viewBox', '0 -10 20 20');
+  marker.setAttribute('refX', '14');
+  marker.setAttribute('refY', '0');
+  marker.setAttribute('orient', 'auto');
+  let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M 0,-10 L 0,10 L 20,0 Z');
+  path.setAttribute('fill', color);
+  marker.appendChild(path);
+  $('#board-defs').append(marker);
+  line.classList.add('board-animation');
+  line.setAttribute('id', 'curr-line');
+  line.setAttribute('x1', from.offsetLeft + center);
+  line.setAttribute('y1', from.offsetTop + center);
+  line.setAttribute('x2', to.offsetLeft + center);
+  line.setAttribute('y2', to.offsetTop + center);
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '10');
+  line.setAttribute('marker-end', 'url(#' + marker_id + ')');
+  $('#board-svg').append(line);
+
+  let white_text_elem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  white_text_elem.setAttribute('x', (from.offsetLeft + to.offsetLeft) / 2 + center);
+  white_text_elem.setAttribute('y', (from.offsetTop + to.offsetTop) / 2 + center);
+  white_text_elem.setAttribute('fill', 'white');
+  white_text_elem.setAttribute('stroke', 'white');
+  white_text_elem.setAttribute('stroke-width', '5');
+  white_text_elem.setAttribute('text-anchor', 'middle');
+  white_text_elem.innerHTML = text;
+  white_text_elem.classList.add('board-animation');
+  $('#board-svg').append(white_text_elem);
+  let text_elem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text_elem.setAttribute('x', (from.offsetLeft + to.offsetLeft) / 2 + center);
+  text_elem.setAttribute('y', (from.offsetTop + to.offsetTop) / 2 + center);
+  text_elem.setAttribute('fill', 'black');
+  text_elem.setAttribute('text-anchor', 'middle');
+  text_elem.innerHTML = text;
+  text_elem.classList.add('board-animation');
+  $('#board-svg').append(text_elem);
+}
+
+
+function clearSVGBoard() {
+  $('.board-animation').remove();
+
+}
