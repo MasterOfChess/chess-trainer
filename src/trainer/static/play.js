@@ -242,5 +242,38 @@ function drawArrow(source, target, text, color) {
 
 function clearSVGBoard() {
   $('.board-animation').remove();
+}
 
+function drawMoveIcon(square, pattern) {
+  console.log('drawing move icon ' + square + ' ' + pattern);
+  let pos = document.querySelector('#board .square-' + square);;
+  let square_size = $('#board .square-55d63').width();
+  let rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', pos.offsetLeft);
+  rect.setAttribute('y', pos.offsetTop);
+  rect.setAttribute('width', square_size);
+  rect.setAttribute('height', square_size);
+  rect.setAttribute('fill', 'url(#' + pattern + ')');
+  rect.classList.add('board-animation');
+  $('#board-svg').append(rect);
+}
+
+function drawBlunder(square) {
+  drawMoveIcon(square, 'blunder-pattern');
+}
+
+function drawInaccuracy(square) {
+  drawMoveIcon(square, 'inaccuracy-pattern');
+}
+
+function drawBookUnknown(square) {
+  drawMoveIcon(square, 'book-unknown-pattern');
+}
+
+function drawBookSideline(square) {
+  drawMoveIcon(square, 'book-sideline-pattern');
+}
+
+function drawBookMainline(square) {
+  drawMoveIcon(square, 'book-mainline-pattern');
 }

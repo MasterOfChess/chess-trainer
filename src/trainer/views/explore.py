@@ -144,6 +144,8 @@ def get_render_data(game_state: GameState,
         'score': score,
         'active_bar': True,
         'refutation': '',
+        'move_message': '',
+        'icon': None
     }
 
 
@@ -165,16 +167,50 @@ def make_move():
     move_uci = request.form.get('move_uci')
     move = chess.Move.from_uci(move_uci)
     game_state = restore_game_state()
+    old_pos_info = assess_position(game_state.board,
+                                   session['current_book_path'])
+    move_info = assess_move(game_state.board, move, old_pos_info)
     game_state.make_move(move)
     save_game_state(game_state)
     pos_info = assess_position(game_state.board, session['current_book_path'])
     data = {'data': get_render_data(game_state, pos_info)}
-    if data['data']['mainline'] is None:
-        flash('You have reached the end of the opening book', 'info')
-        return {
-            'redirect': True,
-            'url': url_for('index.play.explore.explore')
-        }
+    if move_info.move_type == MoveType.OK:
+        if move_info.line_type == LineType.MAIN:
+            data['data']['move_message'] = 'It is good to follow the main line'
+        elif move_info.line_type == LineType.SIDELINE:
+            data['data'][
+                'move_message'] = 'Sometimes it is good to explore sidelines'
+        else:
+            data['data']['move_message'] = 'This is not a part of the opening'
+            data['data']['icon'] = 'book-unknown'
+            data['data']['square'] = move.uci()[2:4]
+    elif move_info.move_type == MoveType.INACCURACY:
+        if move_info.line_type == LineType.MAIN:
+            data['data']['move_message'] = 'It is good to follow the main line'
+        elif move_info.line_type == LineType.SIDELINE:
+            data['data'][
+                'move_message'] = 'Some sidelines are not as good as others'
+            data['data']['icon'] = 'inaccuracy'
+            data['data']['square'] = move.uci()[2:4]
+
+        else:
+            data['data']['move_message'] = 'This is not a part of the opening'
+            data['data']['icon'] = 'inaccuracy'
+            data['data']['square'] = move.uci()[2:4]
+
+    elif move_info.move_type == MoveType.BLUNDER:
+        if move_info.line_type == LineType.MAIN:
+            data['data']['move_message'] = 'It is good to follow the main line'
+        elif move_info.line_type == LineType.SIDELINE:
+            data['data']['move_message'] = 'This sideline is a blunder'
+            data['data']['icon'] = 'blunder'
+            data['data']['square'] = move.uci()[2:4]
+
+        else:
+            data['data']['move_message'] = 'This is not a part of the opening'
+            data['data']['icon'] = 'blunder'
+            data['data']['square'] = move.uci()[2:4]
+
     return data
 
 

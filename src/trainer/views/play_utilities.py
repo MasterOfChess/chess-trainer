@@ -72,10 +72,11 @@ def assess_position(board: chess.Board, opening: str) -> PositionAssessment:
 
 
 def get_move_type(expectation: float, new_expectation: float) -> MoveType:
+    print('Expectation', expectation, new_expectation)
+    if new_expectation + 0.2 < expectation:
+        return MoveType.BLUNDER
     if new_expectation < expectation - 0.05:
         return MoveType.INACCURACY
-    if new_expectation < expectation - 0.1:
-        return MoveType.BLUNDER
     return MoveType.OK
 
 

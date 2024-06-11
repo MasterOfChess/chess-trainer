@@ -100,14 +100,21 @@ function updateSite(data) {
     $('#eval-bar-bot').attr('display', 'none');
   }
   clearSVGBoard();
-  if (data.mainline) {
-    let move_obj = moveFromUCI(data.mainline.move);
-    drawArrow(move_obj.from, move_obj.to, data.mainline.popularity + '%', 'green');
+  if (data.move_message) {
+    $('#move-message').html(data.move_message);
   }
-  for (let line of data.sidelines) {
-    let move_obj = moveFromUCI(line.move);
-    drawArrow(move_obj.from, move_obj.to, line.popularity + '%', 'yellow');
+  if (data.icon) {
+    drawMoveIcon(data.square, data.icon + '-pattern');
   }
-
+  else {
+    if (data.mainline) {
+      let move_obj = moveFromUCI(data.mainline.move);
+      drawArrow(move_obj.from, move_obj.to, data.mainline.popularity + '%', 'green');
+    }
+    for (let line of data.sidelines) {
+      let move_obj = moveFromUCI(line.move);
+      drawArrow(move_obj.from, move_obj.to, line.popularity + '%', 'yellow');
+    }
+  }
 
 }
