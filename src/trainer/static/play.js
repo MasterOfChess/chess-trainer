@@ -27,7 +27,7 @@ function moveToUCI(move) {
 }
 
 function moveFromUCI(move_uci) {
-  console.log("moveFromUCI: " + move_uci);
+  ("moveFromUCI: " + move_uci);
   let from = move_uci.slice(0, 2);
   let to = move_uci.slice(2, 4);
   let promotion = move_uci.slice(4, 5);
@@ -91,7 +91,7 @@ function promotionPrepareAnimation(game, color, target) {
   for (let square of promotionSquaresUnder(target)) {
     let $square = $('#board .square-' + square.coord);
     game.put({ type: square.piece, color: color }, square.coord);
-    console.log("Putting " + square.piece + " at " + square.coord);
+    ("Putting " + square.piece + " at " + square.coord);
     $square.addClass('promotion-square');
     $square.attr('data-promotion', square.piece);
   }
@@ -133,7 +133,7 @@ function gameFromMoves(moves) {
   for (let move of moves) {
     new_game.move(moveFromUCI(move));
   }
-  console.log('gameFromMoves: ' + new_game.fen());
+  ('gameFromMoves: ' + new_game.fen());
   return new_game;
 }
 
@@ -188,7 +188,7 @@ function updatePlayerCardBorder(game) {
 }
 
 function drawArrow(source, target, text, color) {
-  console.log("Drawing arrow from " + source + " to " + target + " with text " + text + " and color " + color);
+  ("Drawing arrow from " + source + " to " + target + " with text " + text + " and color " + color);
   let center = $('#board .square-55d63').width() / 2;
   let from = document.querySelector('#board .square-' + source);
   let to = document.querySelector('#board .square-' + target);
@@ -245,7 +245,7 @@ function clearSVGBoard() {
 }
 
 function drawMoveIcon(square, pattern) {
-  console.log('drawing move icon ' + square + ' ' + pattern);
+  ('drawing move icon ' + square + ' ' + pattern);
   let pos = document.querySelector('#board .square-' + square);;
   let square_size = $('#board .square-55d63').width();
   let rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');

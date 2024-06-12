@@ -9,8 +9,9 @@ from .views import advanced
 from .views import expert
 
 app = Flask(__name__, instance_relative_config=True)
-app.config.from_object('config')
+app.config.from_object('config.default')
 app.config.from_pyfile('config.py')
+
 Session(app)
 
 play.mod.register_blueprint(explore.mod, url_prefix='/explore')

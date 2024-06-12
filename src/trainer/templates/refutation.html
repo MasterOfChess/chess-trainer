@@ -267,7 +267,7 @@ Trainer {% endblock %} {% block head %} {{super()}}
 <script>
   var player_color = "{{player_color}}";
   const fen = {{fen|tojson}};
-  console.log(fen);
+  (fen);
   const pv_moves = JSON.parse({{refutation|tojson}});
   var current_move = 0;
   var game = new Chess(fen);

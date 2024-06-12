@@ -296,7 +296,7 @@ Trainer {% endblock %} {% block head %} {{super()}}
   const bar_score = {{score|tojson}};
   var game = new gameFromMoves({{moves|tojson}});
   var board_locked = {{lock_board|tojson}};
-  console.log("board_locked: ", board_locked);
+  ("board_locked: ", board_locked);
 </script>
 <script
   type="text/javascript"

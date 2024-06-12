@@ -49,11 +49,8 @@ def assess_position(board: chess.Board, opening: str) -> PositionAssessment:
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
     info = engine.analyse(board, chess.engine.Limit(depth=ENGINE_DEPTH))
     engine.quit()
-    print('Engine')
     print(opening, board.fen())
     result = book_reader.from_fen(opening, board.fen())
-    print('Result')
-    print('\n'.join(map(str, result.edges)))
     if not result.edges:
         return PositionAssessment(pv=info['pv'], score=info['score'])
     sidelines = get_sidelines(result)
@@ -70,7 +67,6 @@ def assess_position(board: chess.Board, opening: str) -> PositionAssessment:
 
 
 def get_move_type(expectation: float, new_expectation: float) -> MoveType:
-    print('Expectation', expectation, new_expectation)
     if new_expectation + 0.2 < expectation:
         return MoveType.BLUNDER
     if new_expectation < expectation - 0.05:

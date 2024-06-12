@@ -6,7 +6,7 @@ var config = {
   onDrop: onDrop,
   onSnapEnd: onSnapEnd
 };
-console.log('game.fen()' + game.fen())
+('game.fen()' + game.fen())
 board = Chessboard('board', config);
 
 $('#prev-button').on('click', function () {
@@ -31,7 +31,7 @@ $('#next-button').on('click', function () {
 
 
 function onDragStart(source, piece, position, orientation) {
-  console.log('onDragStart', source, piece, position, orientation)
+  ('onDragStart', source, piece, position, orientation)
   promotionOnDragStart(source, piece, position, orientation)
   if (board_locked) return false
   if (game.game_over()) return false
@@ -43,7 +43,7 @@ function onDragStart(source, piece, position, orientation) {
 }
 
 async function makeMove(move_uci, phase) {
-  console.log('makeMove', move_uci, phase)
+  ('makeMove', move_uci, phase)
   if (phase === 'first') {
     await $.post('make_move', { move_uci: move_uci, phase: 'first' }, function (data) {
       updateSite(data['data']);
@@ -62,7 +62,7 @@ async function makeMove(move_uci, phase) {
 }
 
 function onDrop(source, target, piece) {
-  console.log('onDrop', source, target, piece)
+  ('onDrop', source, target, piece)
   let is_legal = (source, target) => {
     let legal_moves = game
       .moves({ square: source, verbose: true })
@@ -85,13 +85,13 @@ function onDrop(source, target, piece) {
 }
 
 function onSnapEnd() {
-  console.log("onSnapEnd");
+  ("onSnapEnd");
   board.position(game.fen());
 }
 
 function updateSite(data) {
-  console.log("updateSite");
-  console.log(data);
+  ("updateSite");
+  (data);
   if (data === null) {
     return;
   }
@@ -124,7 +124,7 @@ function updateSite(data) {
     drawMoveIcon(data.square, data.icon + '-pattern');
     if (data.refutation !== '') {
       $('#refute-fen').attr('value', data.fen);
-      console.log(data.refutation);
+      (data.refutation);
       $('#refute-refutation').attr('value', data.refutation);
       $('#refute-container').css('display', 'block');
     }

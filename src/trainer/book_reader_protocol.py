@@ -14,7 +14,7 @@ The module defines the following classes:
 Example usage:
 book_reader = BookReader.popen('./book_reader', 'tree.bin')
 result = book_reader.from_fen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-print('\n'.join(map(str, result.edges)))
+logger.debug('\n'.join(map(str, result.edges)))
 """
 import threading
 import queue
@@ -266,7 +266,7 @@ if __name__ == '__main__':
             if message.startswith('fromfen'):
                 _, filename, fen = message.split(None, 2)[1]
                 result = book_reader.from_fen(filename, fen)
-                print('\n'.join(map(str, result.edges)))
+                logger.debug('\n'.join(map(str, result.edges)))
                 continue
 
     main()

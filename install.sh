@@ -8,16 +8,16 @@ pip install -r requirements.txt
 # You can also just put the binary in the src/static/stockfish/ directory
 git clone https://github.com/official-stockfish/Stockfish.git
 cd Stockfish/src
-make -j profile-build ARCH=x86-64
+make -j build-profile
 cd ../..
-mkdir src/static/stockfish
-cp Stockfish/src/stockfish* src/static/stockfish/
+mkdir src/trainer/static/stockfish
+cp Stockfish/src/stockfish* src/trainer/static/stockfish/
 rm -rf Stockfish
 
 # Compile book_reader.cc
 cd tree-generation
 make book_reader
-mv book_reader ../src/static/book_reader
+mv book_reader ../src/trainer/static/book_reader
 cd ..
 
 # Make bash scripts executable

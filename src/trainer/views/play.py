@@ -49,7 +49,7 @@ def get_current_game_state(
         game.headers['White'] = session['nickname']
     else:
         game.headers['Black'] = session['nickname']
-    print('Current game state:')
+    logger.debug('Current game state:')
     print(session['game'])
     print(board)
     return board, game, node
@@ -58,7 +58,7 @@ def get_current_game_state(
 def update_game_state(board: chess.Board, game: chess.pgn.Game):
     session['game'] = game.accept(chess.pgn.StringExporter())
     session['fen'] = board.fen()
-    print('Updated game state:')
+    logger.debug('Updated game state:')
     print(session['game'])
 
 

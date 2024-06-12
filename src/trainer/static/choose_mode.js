@@ -1,6 +1,6 @@
 $('.choose-color').on('click', function () {
   let mode = $(this).attr('id');
-  console.log(mode);
+  (mode);
   $.post("/choose_mode", { mode: mode }, function (data) {
     if (data.response == 'success') {
       window.location = data.redirect;

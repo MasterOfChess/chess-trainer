@@ -78,7 +78,7 @@ class GameState:
         self.node = self.node.add_main_variation(move)
 
     def prev(self) -> bool:
-        print('prev')
+        logger.debug('prev')
         if self.node.parent is None:
             return False
         self.node = self.node.parent
@@ -159,7 +159,7 @@ def second_phase():
                               can_sideline=True)
     if move:
         game_state.make_move(move)
-    print('Move: ', move)
+    logger.debug('Move: ', move)
     save_game_state(game_state)
     pos_info = assess_position(game_state.board, session['current_book_path'])
     return {
@@ -172,7 +172,6 @@ def make_move():
     move_uci = request.form.get('move_uci')
     phase = request.form.get('phase')
     move = chess.Move.from_uci(move_uci)
-    print('/make_move', phase, move)
     if phase == 'first':
         data = first_phase(move_uci)
     else:
@@ -210,7 +209,7 @@ def expert_new_game():
     session['active_bar'] = True
     session['lock_board'] = False
     session['bot_lvl'] = 10
-    print('Initialized')
+    logger.debug('Initialized')
     save_game_state(game_state)
     return redirect(url_for('index.play.expert.expert'))
 
@@ -225,7 +224,7 @@ def set_bot_lvl():
 def expert():
     game_state = restore_game_state()
     pos_info = assess_position(game_state.board, session['current_book_path'])
-    print('Rendering')
+    logger.debug('Rendering')
     print(session['color'])
     print(game_state.board.fen())
     print(pos_info.mainline)

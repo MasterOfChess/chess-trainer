@@ -79,7 +79,7 @@ class GameState:
         self.node = self.node.add_main_variation(move)
 
     def next(self) -> bool:
-        print('next')
+        logger.debug('next')
         if self.node.next() is None:
             return False
         self.node = self.node.next()
@@ -89,7 +89,7 @@ class GameState:
         return True
 
     def prev(self) -> bool:
-        print('prev')
+        logger.debug('prev')
         if self.node.parent is None:
             return False
         self.node = self.node.parent
@@ -129,7 +129,7 @@ def get_render_data(game_state: GameState,
         for move, popularity in pos_info.sidelines
     ]
     score = get_absolute_score(game_state.board, pos_info, session['color'])
-    print('Rendering')
+    logger.debug('Rendering')
     print(session['color'])
     print(game_state.board.fen())
     print(str(game_state))
@@ -166,7 +166,6 @@ def save_game_state(game_state: GameState):
 def make_move():
     move_uci = request.form.get('move_uci')
     move = chess.Move.from_uci(move_uci)
-    print('/make_move', move)
     game_state = restore_game_state()
     old_pos_info = assess_position(game_state.board,
                                    session['current_book_path'])
@@ -254,7 +253,7 @@ def explore_new_game():
     game_state = GameState.initialize(session['color'], session['nickname'],
                                       session['current_book'])
     session['active_bar'] = True
-    print('Initialized')
+    logger.debug('Initialized')
     save_game_state(game_state)
     return redirect(url_for('index.play.explore.explore'))
 
@@ -263,7 +262,7 @@ def explore_new_game():
 def explore():
     game_state = restore_game_state()
     pos_info = assess_position(game_state.board, session['current_book_path'])
-    print('Rendering')
+    logger.debug('Rendering')
     print(session['color'])
     print(game_state.board.fen())
     print(pos_info.mainline)
