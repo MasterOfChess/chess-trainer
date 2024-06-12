@@ -122,6 +122,7 @@ def get_render_data_second_phase(
         'active_bar': session['active_bar'],
         'refutation': '',
         'move_message': '',
+        'lock_board': session.get('lock_board', False),
         'icon': None,
         'result': game_state.game.headers['Result'],
     }
@@ -142,6 +143,7 @@ def get_render_data_first_phase(game_state: GameState,
         'active_bar': session['active_bar'],
         'refutation': '',
         'move_message': '',
+        'lock_board': False,
         'icon': None,
         'result': game_state.game.headers['Result'],
     }

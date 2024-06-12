@@ -236,6 +236,7 @@ Trainer {% endblock %} {% block head %} {{super()}}
           id="prev-button"
           type="button"
           class="btn btn-lg btn-secondary mt-3 w-75"
+          {% if not lock_board %} disabled {%endif %}
         >
           <i class="bi bi-arrow-left"></i>
         </button>
@@ -294,7 +295,7 @@ Trainer {% endblock %} {% block head %} {{super()}}
   const pgn = {{pgn|tojson}};
   const bar_score = {{score|tojson}};
   var game = new gameFromMoves({{moves|tojson}});
-  var board_locked = {{lock_board}};
+  var board_locked = {{lock_board|tojson}};
 </script>
 <script
   type="text/javascript"

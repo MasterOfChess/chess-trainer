@@ -62,31 +62,12 @@ def update_game_state(board: chess.Board, game: chess.pgn.Game):
     print(session['game'])
 
 
-def init_new_game():
-    session['in_book'] = True
-    session['freedom_degree'] = 3
-    session['bot_lvl'] = 10
-    current_board = chess.Board()
-    current_game = chess.pgn.Game()
-    current_game.headers['Event'] = 'Chess Opening Trainer training'
-    current_game.headers.pop('Site')
-    current_game.headers.pop('Round')
-    if session['color'] == 'black':
-        current_game.headers['Black'] = session['nickname']
-        current_game.headers['White'] = OPENINGS[session['current_book']].name
-    else:
-        current_game.headers['White'] = session['nickname']
-        current_game.headers['Black'] = OPENINGS[session['current_book']].name
-    current_game.headers['Date'] = datetime.datetime.now().strftime('%Y-%m-%d')
-    update_game_state(current_board, current_game)
-
-
-@mod.route('/set_bot_lvl', methods=['POST'])
-def set_bot_lvl():
-    lvl = int(request.form.get('bot_lvl'))
-    session['bot_lvl'] = lvl
-    logger.debug('Setting bot_lvl to %s', lvl)
-    return {'bot_lvl': lvl}
+# @mod.route('/set_bot_lvl', methods=['POST'])
+# def set_bot_lvl():
+#     lvl = int(request.form.get('bot_lvl'))
+#     session['bot_lvl'] = lvl
+#     logger.debug('Setting bot_lvl to %s', lvl)
+#     return {'bot_lvl': lvl}
 
 
 @mod.route('/set_freedom_degree', methods=['POST'])
@@ -197,20 +178,19 @@ def download_pgn():
 #     init_new_game()
 #     return render_template('beginner.html', player_color=session['color'])
 
-@mod.route('/advanced')
-def advanced():
-    init_new_game()
-    return render_template('advanced.html', player_color=session['color'])
-
-
 # @mod.route('/beginner')
 # def play_base():
 #     init_new_game()
 #     return render_template('play.html', player_color=session['color'])
+
 
 @mod.route('/refute', methods=['POST'])
 def refute():
     fen = request.form.get('fen')
     refutation = request.form.get('refutation')
     return_url = request.form.get('return_url')
-    return render_template('refutation.html', fen=fen, refutation=refutation, player_color=session['color'], return_url=return_url)
+    return render_template('refutation.html',
+                           fen=fen,
+                           refutation=refutation,
+                           player_color=session['color'],
+                           return_url=return_url)

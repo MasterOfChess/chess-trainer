@@ -112,9 +112,11 @@ function updateSite(data) {
   }
   if (data.lock_board) {
     board_locked = true;
+    $('#prev-button').prop('disabled', false);
   }
   else {
     board_locked = false;
+    $('#prev-button').prop('disabled', true);
   }
   clearSVGBoard();
   if (data.icon) {

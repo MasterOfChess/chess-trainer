@@ -111,6 +111,11 @@ def choose_mode():
             'response': 'success',
             'redirect': url_for('index.play.advanced.advanced_new_game')
         }
+    if mode == 'expert':
+        return {
+            'response': 'success',
+            'redirect': url_for('index.play.expert.expert_new_game')
+        }
     return {'response': 'error', 'redirect': url_for('index.index')}
 
 

@@ -231,51 +231,18 @@ Trainer {% endblock %} {% block head %} {{super()}}
 
     <div class="col">
       {{ eval_bar_radio() }}
-      <div class="container-fluid">
-        <button
-          id="prev-button"
-          type="button"
-          class="btn btn-lg btn-secondary mt-3 w-75"
-          {% if not lock_board %} disabled {%endif %}
+      <div class="container-fluid mt-3">
+        <label for="bot-lvl-form" class="form-label"
+          >Bot lvl: {{bot_lvl|tojson}}</label
         >
-          <i class="bi bi-arrow-left"></i>
-        </button>
-      </div>
-      <div class="container-fluid mb-3 mt-3" style="height: 100px" hidden>
-        <div class="card border-1 border-dark h-100">
-          <div class="card h-100">
-            <div
-              class="card-body text-light h-100"
-              style="background: var(--bg-gradient)"
-            >
-              <p class="card-text">
-                <span id="move-message"><strong>{{move_message}}</strong></span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div id="refute-container" class="container-fluid" style="display: none">
-        <form action="{{url_for('index.play.refute')}}" method="post">
-          <input id="refute-fen" type="hidden" name="fen" value="{{fen}}" />
-          <input
-            id="refute-refutation"
-            type="hidden"
-            name="refutation"
-            value="{{refutation}}"
-          />
-          <input
-            id="refute-return-url"
-            type="hidden"
-            name="return_url"
-            value="{{url_for('index.play.medium.medium')}}"
-          />
-          <input
-            type="submit"
-            value="Show refutation"
-            class="btn btn-lg btn-secondary mt-3 w-100"
-          />
-        </form>
+        <input
+          type="range"
+          class="form-range"
+          min="1"
+          max="20"
+          value="{{bot_lvl|tojson}}"
+          id="bot-lvl-form"
+        />
       </div>
     </div>
   </div>
@@ -295,25 +262,23 @@ Trainer {% endblock %} {% block head %} {{super()}}
   const pgn = {{pgn|tojson}};
   const bar_score = {{score|tojson}};
   var game = new gameFromMoves({{moves|tojson}});
-  console.log("game: " + game.fen());
   var board_locked = {{lock_board|tojson}};
   console.log("board_locked: ", board_locked);
 </script>
 <script
   type="text/javascript"
   language="javascript"
-  src="{{url_for('static', filename='medium.js')}}"
+  src="{{url_for('static', filename='expert.js')}}"
 ></script>
 <script>
   if (player_color === "black") {
     board.orientation("black");
-    $('#eval-bar-bot-rect').attr('fill', 'black');
-    $('#eval-bar-top-rect').attr('fill', 'white');
-  }
-  else {
+    $("#eval-bar-bot-rect").attr("fill", "black");
+    $("#eval-bar-top-rect").attr("fill", "white");
+  } else {
     board.orientation("white");
-    $('#eval-bar-bot-rect').attr('fill', 'white');
-    $('#eval-bar-top-rect').attr('fill', 'black');
+    $("#eval-bar-bot-rect").attr("fill", "white");
+    $("#eval-bar-top-rect").attr("fill", "black");
   }
 </script>
 {% endblock %}
