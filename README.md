@@ -19,7 +19,7 @@ pip install -r requirements.txt
 # You can also just put the binary in the src/static/stockfish/ directory
 git clone https://github.com/official-stockfish/Stockfish.git
 cd Stockfish/src
-make -j build-profile
+make -j profile-build ARCH=x86-64
 cd ../..
 mkdir src/trainer/static/stockfish
 cp Stockfish/src/stockfish* src/trainer/static/stockfish/
