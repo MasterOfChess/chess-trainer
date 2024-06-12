@@ -6,6 +6,7 @@ from .shared_jobs import book_reader
 import enum
 import dataclasses
 from ..book_reader_protocol import EdgeResult
+import random
 
 # Might be a good idea to make it opening dependent
 START_HALFMOVES_LENGTH = 0
@@ -93,12 +94,16 @@ def assess_move(board: chess.Board, move: chess.Move,
         line_type = LineType.SIDELINE
     if position_assessment.mainline and move == position_assessment.mainline[0]:
         line_type = LineType.MAIN
-    return MoveAssessment(move_type, line_type, info['score'], info['pv'])
+    return MoveAssessment(move_type, line_type, info['score'], info.get('pv', []))
 
 
-def find_best_move(board: chess.Board, lvl: int, opening: str) -> chess.Move:
+def find_best_move(board: chess.Board, lvl: int, opening: str, can_sideline: bool = False) -> chess.Move:
     result = book_reader.from_fen(opening, board.fen())
     if result.edges:
+        if can_sideline:
+            sidelines = get_sidelines(result)
+            if random.random() < 0.5 and sidelines:
+                return random.choice(sidelines)[0]            
         return result.edges[0].move
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
     engine.configure({'Skill level': lvl})
