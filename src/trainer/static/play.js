@@ -1,6 +1,6 @@
 const whiteSquarePink = '#FFB6C1';
 const blackSquarePink = '#FF69B4';
-const moveDelay = 300; // allows better experience
+const moveDelay = 500; // allows better experience
 var promotion_running = false;
 
 $('#eval-bar-on').on('click', async function () {

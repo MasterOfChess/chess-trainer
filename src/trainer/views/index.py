@@ -78,6 +78,12 @@ def choose_color():
         'redirect': url_for('index.choose_mode')
     }
 
+# The goal is 4 modes:
+# - explore: play against the bot with the selected opening
+# - beginner: play against the bot with the selected opening, but with hints and move suggestions
+# - medium: play against the bot with the selected opening, but with hints but no move suggestions
+# - advanced: play against the bot with the selected opening with hints, but bot can play sidelines
+# - expert: play against the bot with the selected opening without hints, bot can play sidelines
 
 @mod.route('/choose_mode', methods=['GET', 'POST'])
 def choose_mode():
@@ -94,6 +100,11 @@ def choose_mode():
         return {
             'response': 'success',
             'redirect': url_for('index.play.beginner.beginner_new_game')
+        }
+    if mode == 'medium':
+        return {
+            'response': 'success',
+            'redirect': url_for('index.play.medium.medium_new_game')
         }
     return {'response': 'error', 'redirect': url_for('index.index')}
 

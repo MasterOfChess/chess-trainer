@@ -144,7 +144,7 @@ Trainer {% endblock %} {% block head %} {{super()}}
                   y="10"
                   width="44"
                   height="44"
-                  href="{{url_for('static', filename='images/question.svg')}}"
+                  href="{{url_for('static', filename='images/exclamation.svg')}}"
                 />
               </pattern>
               <pattern
@@ -267,7 +267,7 @@ Trainer {% endblock %} {% block head %} {{super()}}
             id="refute-return-url"
             type="hidden"
             name="return_url"
-            value="{{url_for('index.play.beginner.beginner')}}"
+            value="{{url_for('index.play.medium.medium')}}"
           />
           <input
             type="submit"
@@ -294,12 +294,13 @@ Trainer {% endblock %} {% block head %} {{super()}}
   const pgn = {{pgn|tojson}};
   const bar_score = {{score|tojson}};
   var game = new gameFromMoves({{moves|tojson}});
-  var board_locked = {{lock_board}};
+  var board_locked = {{lock_board|tojson}};
+  console.log("board_locked: ", board_locked);
 </script>
 <script
   type="text/javascript"
   language="javascript"
-  src="{{url_for('static', filename='beginner.js')}}"
+  src="{{url_for('static', filename='medium.js')}}"
 ></script>
 <script>
   if (player_color === "black") {
@@ -312,11 +313,5 @@ Trainer {% endblock %} {% block head %} {{super()}}
     $('#eval-bar-bot-rect').attr('fill', 'white');
     $('#eval-bar-top-rect').attr('fill', 'black');
   }
-  {% if mainline is not none %}
-  drawArrow({{mainline.move[:2]|tojson}}, {{mainline.move[2:4]|tojson}}, "{{mainline.popularity|tojson}}%", "green");
-  {% endif %}
-  {% for sideline in sidelines %}
-  drawArrow({{sideline.move[:2]|tojson}}, {{sideline.move[2:4]|tojson}}, "{{sideline.popularity|tojson}}%", "yellow");
-  {% endfor %}
 </script>
 {% endblock %}

@@ -51,11 +51,13 @@ async function makeMove(move_uci, phase) {
   }
   else {
     await $.post('make_move', { move_uci: move_uci, phase: 'second' }, function (data) {
-      if (data['data'].bot_move) {
-        game.move(moveFromUCI(data['data'].bot_move));
-        board.position(game.fen());
-      }
-      updateSite(data['data']);
+      setTimeout(() => {
+        if (data['data'].bot_move) {
+          game.move(moveFromUCI(data['data'].bot_move));
+          board.position(game.fen());
+        }
+        updateSite(data['data']);
+      }, moveDelay);
     });
   }
 
@@ -115,9 +117,6 @@ function updateSite(data) {
     board_locked = false;
   }
   clearSVGBoard();
-  // if (data.move_message) {
-  //   $('#move-message').html(data.move_message);
-  // }
   if (data.icon) {
     drawMoveIcon(data.square, data.icon + '-pattern');
     if (data.refutation !== '') {
@@ -129,14 +128,6 @@ function updateSite(data) {
   }
   else {
     $('#refute-container').css('display', 'none');
-    if (data.mainline) {
-      let move_obj = moveFromUCI(data.mainline.move);
-      drawArrow(move_obj.from, move_obj.to, data.mainline.popularity + '%', 'green');
-    }
-    for (let line of data.sidelines) {
-      let move_obj = moveFromUCI(line.move);
-      drawArrow(move_obj.from, move_obj.to, line.popularity + '%', 'yellow');
-    }
   }
 
 }
