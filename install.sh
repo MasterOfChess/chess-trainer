@@ -22,4 +22,3 @@ cd ..
 
 # Make bash scripts executable
 chmod +x run_trainer.sh
-chmod +x open_app.sh

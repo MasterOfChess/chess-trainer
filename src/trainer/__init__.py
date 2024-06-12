@@ -9,8 +9,14 @@ from .views import advanced
 from .views import expert
 
 app = Flask(__name__, instance_relative_config=True)
-app.config.from_object('config.default')
-app.config.from_pyfile('config.py')
+try:
+    app.config.from_object('config.default')
+except Exception:
+    pass
+try:
+    app.config.from_pyfile('config.py')
+except Exception:
+    pass
 
 Session(app)
 
