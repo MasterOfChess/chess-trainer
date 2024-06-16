@@ -12,6 +12,7 @@ import random
 START_HALFMOVES_LENGTH = 0
 SIDELINE_ACCEPT_THRESHOLD = 10
 ENGINE_DEPTH = 15
+ENGINE_MEMORY_LIMIT = 128
 
 MoveType = enum.Enum('MoveScore', ['OK', 'INACCURACY', 'BLUNDER'])
 LineType = enum.Enum('LineType', ['MAIN', 'SIDELINE', 'UNKNOWN'])
@@ -47,6 +48,7 @@ def get_sidelines(result: EdgeResult) -> list[tuple[chess.Move, int]]:
 
 def assess_position(board: chess.Board, opening: str) -> PositionAssessment:
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    engine.configure({'Hash': ENGINE_MEMORY_LIMIT})
     info = engine.analyse(board, chess.engine.Limit(depth=ENGINE_DEPTH))
     engine.quit()
     print(opening, board.fen())
@@ -78,6 +80,7 @@ def assess_move(board: chess.Board, move: chess.Move,
                 position_assessment: PositionAssessment) -> MoveAssessment:
     board.push(move)
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    engine.configure({'Hash': ENGINE_MEMORY_LIMIT})
     info = engine.analyse(board, chess.engine.Limit(depth=ENGINE_DEPTH))
     engine.quit()
     board.pop()
@@ -90,25 +93,32 @@ def assess_move(board: chess.Board, move: chess.Move,
         line_type = LineType.SIDELINE
     if position_assessment.mainline and move == position_assessment.mainline[0]:
         line_type = LineType.MAIN
-    return MoveAssessment(move_type, line_type, info['score'], info.get('pv', []))
+    return MoveAssessment(move_type, line_type, info['score'],
+                          info.get('pv', []))
 
 
-def find_best_move(board: chess.Board, lvl: int, opening: str, can_sideline: bool = False) -> chess.Move:
+def find_best_move(board: chess.Board,
+                   lvl: int,
+                   opening: str,
+                   can_sideline: bool = False) -> chess.Move:
     result = book_reader.from_fen(opening, board.fen())
     if result.edges:
         if can_sideline:
             sidelines = get_sidelines(result)
             if random.random() < 0.5 and sidelines:
-                return random.choice(sidelines)[0]            
+                return random.choice(sidelines)[0]
         return result.edges[0].move
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    engine.configure({'Skill level': lvl})
+    engine.configure({'Skill level': lvl, 'Hash': ENGINE_MEMORY_LIMIT})
     result = engine.play(board, chess.engine.Limit(time=0.2))
+    engine.quit()
     return result.move
 
-def get_absolute_score(board: chess.Board, pos_info: PositionAssessment, player_color: str) -> int:
-    if (board.turn == chess.WHITE 
-        and player_color== 'white') or (board.turn == chess.BLACK
-                                             and player_color == 'black'):
+
+def get_absolute_score(board: chess.Board, pos_info: PositionAssessment,
+                       player_color: str) -> int:
+    if (board.turn == chess.WHITE and
+            player_color == 'white') or (board.turn == chess.BLACK and
+                                         player_color == 'black'):
         return int(pos_info.score.relative.wdl().expectation() * 100)
     return 100 - int(pos_info.score.relative.wdl().expectation() * 100)
