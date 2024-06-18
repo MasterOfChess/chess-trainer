@@ -1,4 +1,4 @@
-# chess-trainer
+# Chess Openings Trainer
 # Instalation
 Download the repository and run:
 ```bash
