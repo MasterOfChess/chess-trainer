@@ -30,7 +30,7 @@
         </div>
         <div class="card-body w-50">
           <p class="card-text">{{opening.description}} <strong>The bot is based
-            on over {{nice_number(opening.moves)}} moves chosen from {{nice_number(opening.games)}} master games!</strong></p>
+            on over {{nice_number(opening.games)}} master games!</strong></p>
           <a
             href="{{ url_for('index.openings', name=opening.book) }}"
             class="btn btn-outline-light float-right"

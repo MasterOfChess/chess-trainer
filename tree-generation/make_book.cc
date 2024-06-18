@@ -193,7 +193,9 @@ public:
         entries.push_back(entry);
       }
     }
-    DumpInfo info{(int)games.size(), (int)entries.size()};
+    DumpInfo info;
+    info.n_accepted_games = (int)games.size();
+    info.n_edges = 0;
     std::sort(
         entries.begin(), entries.end(), [](const Entry &a, const Entry &b) {
           if (a.zobrist == b.zobrist && a.source_square == b.source_square) {
@@ -212,7 +214,10 @@ public:
         count++;
         i++;
       }
-      writeMove(entries[i], count);
+      if (count >= POPULARITY_LIMIT) {
+      	info.n_edges++;
+      	writeMove(entries[i], count);
+      }
     }
     file.flush();
     entries.clear();
@@ -234,6 +239,7 @@ private:
   };
   std::vector<Game> games;
   const int ACCEPTED_LIMIT;
+  const int POPULARITY_LIMIT{5};
   std::mt19937 gen;
   std::uniform_int_distribution<int> distribution;
   std::uniform_real_distribution<double> real_coin;
