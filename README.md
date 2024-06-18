@@ -1,5 +1,5 @@
 # Chess Openings Trainer
-# Instalation
+## Instalation
 Download the repository and run:
 ```bash
 cd chess-trainer
@@ -35,6 +35,6 @@ cd ..
 chmod +x run_trainer.sh
 ```
 
-# Running the app
+## Running the app
 You can run the app with `run_trainer.sh` script.
 Opening app is as easy as opening `http://localhost:5000` in your browser.
