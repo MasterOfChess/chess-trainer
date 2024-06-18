@@ -204,7 +204,7 @@ def second_phase():
         game_state.game.headers['Result'] = game_state.board.result()
     elif not session.get('lock_board', False):
         move = find_best_move(game_state.board,
-                              1,
+                              1400,
                               session['current_book_path'],
                               can_sideline=True)
     if move:

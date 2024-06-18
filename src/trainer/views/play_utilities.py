@@ -54,7 +54,7 @@ def assess_position(board: chess.Board, opening: str) -> PositionAssessment:
     print(opening, board.fen())
     result = book_reader.from_fen(opening, board.fen())
     if not result.edges:
-        return PositionAssessment(pv=info['pv'], score=info['score'])
+        return PositionAssessment(pv=info.get('pv', []), score=info['score'])
     sidelines = get_sidelines(result)
     if len(board.move_stack) < START_HALFMOVES_LENGTH:
         sidelines = []
@@ -65,7 +65,7 @@ def assess_position(board: chess.Board, opening: str) -> PositionAssessment:
     return PositionAssessment(score=info['score'],
                               mainline=mainline,
                               sidelines=sidelines,
-                              pv=info['pv'])
+                              pv=info.get('pv', []))
 
 
 def get_move_type(expectation: float, new_expectation: float) -> MoveType:
@@ -109,7 +109,13 @@ def find_best_move(board: chess.Board,
                 return random.choice(sidelines)[0]
         return result.edges[0].move
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    engine.configure({'Skill level': lvl, 'Hash': ENGINE_MEMORY_LIMIT})
+    # engine.configure({'Skill level': lvl, 'Hash': ENGINE_MEMORY_LIMIT})
+    engine.configure({
+        'UCI_LimitStrength': True,
+        'UCI_Elo': lvl,
+        'Hash': ENGINE_MEMORY_LIMIT
+    })
+
     result = engine.play(board, chess.engine.Limit(time=0.2))
     engine.quit()
     return result.move

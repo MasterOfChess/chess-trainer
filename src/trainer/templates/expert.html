@@ -238,8 +238,9 @@ Trainer {% endblock %} {% block head %} {{super()}}
         <input
           type="range"
           class="form-range"
-          min="1"
-          max="20"
+          min="1400"
+          max="3100"
+          step="100"
           value="{{bot_lvl|tojson}}"
           id="bot-lvl-form"
         />

@@ -102,8 +102,6 @@ def save_game_state(game_state: GameState):
 def first_phase(move_uci: str):
     move = chess.Move.from_uci(move_uci)
     game_state = restore_game_state()
-    old_pos_info = assess_position(game_state.board,
-                                   session['current_book_path'])
     game_state.make_move(move)
     save_game_state(game_state)
     if game_state.board.is_game_over():
@@ -159,7 +157,6 @@ def second_phase():
                               can_sideline=True)
     if move:
         game_state.make_move(move)
-    logger.debug('Move: ', move)
     save_game_state(game_state)
     pos_info = assess_position(game_state.board, session['current_book_path'])
     return {
@@ -171,7 +168,6 @@ def second_phase():
 def make_move():
     move_uci = request.form.get('move_uci')
     phase = request.form.get('phase')
-    move = chess.Move.from_uci(move_uci)
     if phase == 'first':
         data = first_phase(move_uci)
     else:
@@ -208,7 +204,7 @@ def expert_new_game():
                                       session['current_book'])
     session['active_bar'] = True
     session['lock_board'] = False
-    session['bot_lvl'] = 10
+    session['bot_lvl'] = 2200
     logger.debug('Initialized')
     save_game_state(game_state)
     return redirect(url_for('index.play.expert.expert'))

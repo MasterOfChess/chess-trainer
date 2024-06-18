@@ -105,7 +105,7 @@ def get_render_data_second_phase(
     if game_state.board.is_game_over():
         game_state.game.headers['Result'] = game_state.board.result()
     else:
-        move = find_best_move(game_state.board, 1, session['current_book_path'])
+        move = find_best_move(game_state.board, 1400, session['current_book_path'])
     logger.debug('Rendering')
     print(session['color'])
     print(game_state.board.fen())
@@ -250,7 +250,7 @@ def second_phase():
     if game_state.board.is_game_over():
         game_state.game.headers['Result'] = game_state.board.result()
     elif not session.get('lock_board', False):
-        move = find_best_move(game_state.board, 1, session['current_book_path'])
+        move = find_best_move(game_state.board, 1400, session['current_book_path'])
     if move:
         game_state.make_move(move)
     save_game_state(game_state)
